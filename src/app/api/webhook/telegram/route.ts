@@ -1,10 +1,29 @@
 import { NextResponse } from 'next/server';
-import TelegramBot from 'node-telegram-bot-api';
 import { kv } from '@vercel/kv';
+import { getNegotiationGuidance } from '@/lib/negotiator';
 
-const token = process.env.TELEGRAM_BOT_TOKEN!;
-const deepseekApiKey = process.env.DEEPSEEK_API_KEY!;
-const bot = new TelegramBot(token);
+// Lightweight Telegram message sender for Serverless (no heavy library dependencies)
+async function sendTelegramMessage(chatId: number, text: string, options: any = {}) {
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    if (!token) throw new Error('TELEGRAM_BOT_TOKEN is missing in Environment Variables');
+
+    const url = `https://api.telegram.org/bot${token}/sendMessage`;
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            chat_id: chatId,
+            text: text,
+            ...options
+        })
+    });
+
+    if (!response.ok) {
+        const err = await response.json();
+        console.error('Telegram API Error Response:', JSON.stringify(err));
+    }
+    return response;
+}
 
 const formSteps = [
     { key: 'itemName', label: 'Item / Part Name' },
@@ -33,105 +52,80 @@ const formSteps = [
     { key: 'internalSupport', label: 'Internal support (Strong / Neutral / Weak)' }
 ];
 
-const systemPrompt = `You are a senior procurement negotiation strategist with 25+ years industrial sourcing experience.
-Your purpose is NOT to teach negotiation theory.
-Your purpose is to calculate the economically rational next move in a live supplier negotiation.
-Thin in terms of leverage, dependency, alternatives, time pressure, switching cost, supplier psychology, bluff probability, and concession sequencing.
-Never give motivational advice.
-Respond like an experienced purchase head coaching another purchase head privately.
-Output format exactly:
-NEGOTIATION MODE:
-POSITION:
-SUPPLIER INTENT:
-NEXT MOVE:
-SAY THIS:
-AVOID THIS:
-CONCESSION LIMIT:
-ESCALATION PLAN:
-Be concise and practical.`;
-
 export async function POST(req: Request) {
     try {
         const body = await req.json();
 
-        if (body.message) {
-            const msg = body.message;
-            const chatId = msg.chat.id;
-            const text = msg.text;
+        // Basic Telegram update structure check
+        if (!body || !body.message || !body.message.chat) {
+            return NextResponse.json({ ok: true });
+        }
 
-            if (text === '/start') {
-                await bot.sendMessage(chatId, "👋 Welcome to DealPilot Negotiation Co-Pilot.\n\nType /negotiate to start a fresh guidance session.");
-                return NextResponse.json({ ok: true });
-            }
+        const chatId = body.message.chat.id;
+        const text = body.message.text;
 
-            if (text === '/negotiate') {
-                const initialState = { step: 0, data: {} };
-                await kv.set(`state:${chatId}`, initialState, { ex: 3600 }); // Expire in 1 hour
-                await bot.sendMessage(chatId, `Step 1: ${formSteps[0].label}`);
-                return NextResponse.json({ ok: true });
-            }
+        // 1. Handle Basic Commands
+        if (text === '/start') {
+            await sendTelegramMessage(chatId, "👋 Welcome to DealPilot Negotiation Co-Pilot.\n\nType /negotiate to start a fresh guidance session.");
+            return NextResponse.json({ ok: true });
+        }
 
-            const state: any = await kv.get(`state:${chatId}`);
+        if (text === '/negotiate') {
+            const initialState = { step: 0, data: {} };
+            // Save state in Vercel KV for persistence across serverless runs
+            await kv.set(`state:${chatId}`, initialState, { ex: 3600 });
+            await sendTelegramMessage(chatId, `Step 1: ${formSteps[0].label}`);
+            return NextResponse.json({ ok: true });
+        }
 
-            if (state) {
-                const currentStep = formSteps[state.step];
-                state.data[currentStep.key] = text;
-                state.step++;
+        // 2. Handle Continuous Conversational State
+        const state: any = await kv.get(`state:${chatId}`);
 
-                if (state.step < formSteps.length) {
-                    await kv.set(`state:${chatId}`, state, { ex: 3600 });
-                    await bot.sendMessage(chatId, `Step ${state.step + 1}: ${formSteps[state.step].label}`);
-                } else {
-                    await bot.sendMessage(chatId, "🔄 Analyzing data and calculating strategy...");
+        if (state && typeof state.step === 'number') {
+            const currentStep = formSteps[state.step];
+            state.data[currentStep.key] = text;
+            state.step++;
 
-                    try {
-                        const userPrompt = `NEGOTIATION DATA:\n` + Object.keys(state.data).map(k => `${k}: ${state.data[k]}`).join('\n');
+            if (state.step < formSteps.length) {
+                // Save intermediate progress
+                await kv.set(`state:${chatId}`, state, { ex: 3600 });
+                await sendTelegramMessage(chatId, `Step ${state.step + 1}: ${formSteps[state.step].label}`);
+            } else {
+                // Form Complete -> Run AI Analysis
+                await sendTelegramMessage(chatId, "🔄 Analyzing data and calculating strategy...");
 
-                        const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${deepseekApiKey}`
-                            },
-                            body: JSON.stringify({
-                                model: 'deepseek-chat',
-                                messages: [
-                                    { role: 'system', content: systemPrompt },
-                                    { role: 'user', content: userPrompt }
-                                ],
-                                temperature: 0.2
-                            })
-                        });
+                try {
+                    const guidance = await getNegotiationGuidance(state.data);
 
-                        const aiResult = await response.json();
-                        const guidance = aiResult.choices[0].message.content;
+                    const itemName = state.data.itemName || 'Item';
+                    const supplierName = state.data.supplierName || 'N/A';
 
-                        const itemName = state.data.itemName || 'Item';
-                        const supplierName = state.data.supplierName || 'N/A';
+                    await sendTelegramMessage(chatId, `📋 *NEGOTIATION REPORT: ${itemName}*\n🏢 *Supplier:* ${supplierName}`, { parse_mode: 'Markdown' });
 
-                        await bot.sendMessage(chatId, `📋 *NEGOTIATION REPORT: ${itemName}*\n🏢 *Supplier:* ${supplierName}\n\nAnalyzing data and calculating strategy...`, { parse_mode: 'Markdown' });
-
-                        const sections = guidance.split(/\n(?=[A-Z\s]+:)/);
-                        for (const section of sections) {
-                            if (section.trim()) {
-                                await bot.sendMessage(chatId, section.trim());
-                            }
+                    // Split guidance into sections for readability and length limits
+                    const sections = guidance.split(/\n(?=[A-Z\s]+:)/);
+                    for (const section of sections) {
+                        if (section.trim()) {
+                            await sendTelegramMessage(chatId, section.trim());
                         }
-
-                        await bot.sendMessage(chatId, "✅ Negotiation strategy complete. Type /negotiate to start again.");
-                        await kv.del(`state:${chatId}`);
-                    } catch (error: any) {
-                        await bot.sendMessage(chatId, `❌ Error calling AI: ${error.message}`);
-                        await kv.del(`state:${chatId}`);
                     }
+
+                    await sendTelegramMessage(chatId, "✅ Negotiation strategy complete. Type /negotiate to start again.");
+                    await kv.del(`state:${chatId}`);
+                } catch (error: any) {
+                    console.error('DeepSeek/Negotiator Error:', error);
+                    await sendTelegramMessage(chatId, `❌ Negotiation Error: ${error.message}`);
+                    await kv.del(`state:${chatId}`);
                 }
-                return NextResponse.json({ ok: true });
             }
+        } else if (text && !text.startsWith('/')) {
+            await sendTelegramMessage(chatId, "No active negotiation session found. Type /negotiate to start.");
         }
 
         return NextResponse.json({ ok: true });
-    } catch (error) {
-        console.error('Error in Telegram Webhook:', error);
-        return NextResponse.json({ error: 'Webhook Error' }, { status: 500 });
+    } catch (error: any) {
+        console.error('Serious Webhook Error:', error);
+        // Always return 200 to Telegram unless you want it to keep retrying failed messages
+        return NextResponse.json({ ok: true });
     }
 }
