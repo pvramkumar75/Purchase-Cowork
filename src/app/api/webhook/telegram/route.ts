@@ -125,27 +125,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ ok: true });
     } catch (error: any) {
         console.error('Serious Webhook Error:', error);
-
-        // Try to notify the user if possible, but only if we have a token
-        try {
-            const token = process.env.TELEGRAM_BOT_TOKEN;
-            const body = await req.clone().json();
-            const chatId = body?.message?.chat?.id;
-            if (token && chatId) {
-                const url = `https://api.telegram.org/bot${token}/sendMessage`;
-                await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: chatId,
-                        text: `⚠️ Bot Error: ${error.message}\n\nCheck if Vercel KV is connected and Environment Variables are set.`
-                    })
-                });
-            }
-        } catch (e) {
-            // Ignore secondary errors
-        }
-
+        // Always return 200 to Telegram unless you want it to keep retrying failed messages
         return NextResponse.json({ ok: true });
     }
 }
