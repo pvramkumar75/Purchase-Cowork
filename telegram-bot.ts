@@ -106,6 +106,6 @@ bot.on('message', async (msg) => {
     }
 });
 
-bot.on('polling_error', (error) => {
+bot.on('polling_error', (error: any) => {
     console.log('Polling error:', error.code);
 });
