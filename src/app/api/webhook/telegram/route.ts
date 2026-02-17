@@ -1,15 +1,10 @@
 import { NextResponse } from 'next/server';
 import TelegramBot from 'node-telegram-bot-api';
+import { kv } from '@vercel/kv';
 
-// This is required to make it work in Next.js API routes
-// We disable polling because we'll use webhooks
 const token = process.env.TELEGRAM_BOT_TOKEN!;
 const deepseekApiKey = process.env.DEEPSEEK_API_KEY!;
 const bot = new TelegramBot(token);
-
-// In-memory state (won't persist in serverless environments)
-// In production, use Redis or a database for conversational state
-const userStates: { [key: number]: any } = {};
 
 const formSteps = [
     { key: 'itemName', label: 'Item / Part Name' },
@@ -59,7 +54,6 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
 
-        // Telegram update object
         if (body.message) {
             const msg = body.message;
             const chatId = msg.chat.id;
@@ -71,19 +65,21 @@ export async function POST(req: Request) {
             }
 
             if (text === '/negotiate') {
-                userStates[chatId] = { step: 0, data: {} };
+                const initialState = { step: 0, data: {} };
+                await kv.set(`state:${chatId}`, initialState, { ex: 3600 }); // Expire in 1 hour
                 await bot.sendMessage(chatId, `Step 1: ${formSteps[0].label}`);
                 return NextResponse.json({ ok: true });
             }
 
-            if (userStates[chatId]) {
-                const state = userStates[chatId];
-                const currentStep = formSteps[state.step];
+            const state: any = await kv.get(`state:${chatId}`);
 
+            if (state) {
+                const currentStep = formSteps[state.step];
                 state.data[currentStep.key] = text;
                 state.step++;
 
                 if (state.step < formSteps.length) {
+                    await kv.set(`state:${chatId}`, state, { ex: 3600 });
                     await bot.sendMessage(chatId, `Step ${state.step + 1}: ${formSteps[state.step].label}`);
                 } else {
                     await bot.sendMessage(chatId, "🔄 Analyzing data and calculating strategy...");
@@ -123,10 +119,10 @@ export async function POST(req: Request) {
                         }
 
                         await bot.sendMessage(chatId, "✅ Negotiation strategy complete. Type /negotiate to start again.");
-                        delete userStates[chatId];
+                        await kv.del(`state:${chatId}`);
                     } catch (error: any) {
                         await bot.sendMessage(chatId, `❌ Error calling AI: ${error.message}`);
-                        delete userStates[chatId];
+                        await kv.del(`state:${chatId}`);
                     }
                 }
                 return NextResponse.json({ ok: true });
