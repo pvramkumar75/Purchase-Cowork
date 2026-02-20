@@ -109,12 +109,70 @@ export default function Home() {
 
   const downloadPDF = async () => {
     if (!resultRef.current) return;
-    const canvas = await html2canvas(resultRef.current, { backgroundColor: '#0a0e14', scale: 2 });
-    const imgData = canvas.toDataURL('image/png');
+
+    const canvas = await html2canvas(resultRef.current, {
+      backgroundColor: '#0a0e14',
+      scale: 2,
+      useCORS: true,
+      logging: false,
+    });
+
     const pdf = new jsPDF('p', 'mm', 'a4');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 8; // mm margin on each side
+    const usableWidth = pageWidth - margin * 2;
+    const usableHeight = pageHeight - margin * 2;
+
+    // Calculate how tall the full image would be when scaled to usable width
+    const imgScaledHeight = (canvas.height * usableWidth) / canvas.width;
+
+    // If it fits on one page, just add it
+    if (imgScaledHeight <= usableHeight) {
+      const imgData = canvas.toDataURL('image/png');
+      pdf.addImage(imgData, 'PNG', margin, margin, usableWidth, imgScaledHeight);
+    } else {
+      // Multi-page: slice the canvas into page-sized chunks
+      const scaleFactor = canvas.width / usableWidth; // px per mm
+      const sliceHeightPx = Math.floor(usableHeight * scaleFactor); // height of each slice in canvas pixels
+      let yOffset = 0;
+      let pageIndex = 0;
+
+      while (yOffset < canvas.height) {
+        const remainingHeight = canvas.height - yOffset;
+        const currentSliceHeight = Math.min(sliceHeightPx, remainingHeight);
+
+        // Create a temporary canvas for this slice
+        const sliceCanvas = document.createElement('canvas');
+        sliceCanvas.width = canvas.width;
+        sliceCanvas.height = currentSliceHeight;
+        const ctx = sliceCanvas.getContext('2d');
+        if (!ctx) break;
+
+        // Draw the slice from the full canvas
+        ctx.drawImage(
+          canvas,
+          0, yOffset, canvas.width, currentSliceHeight,  // source
+          0, 0, canvas.width, currentSliceHeight           // destination
+        );
+
+        const sliceImgData = sliceCanvas.toDataURL('image/png');
+        const sliceScaledHeight = (currentSliceHeight * usableWidth) / canvas.width;
+
+        if (pageIndex > 0) pdf.addPage();
+        pdf.addImage(sliceImgData, 'PNG', margin, margin, usableWidth, sliceScaledHeight);
+
+        yOffset += currentSliceHeight;
+        pageIndex++;
+      }
+    }
+
+    // Add footer on the last page
+    const lastPageHeight = pdf.internal.pageSize.getHeight();
+    pdf.setFontSize(7);
+    pdf.setTextColor(120, 120, 120);
+    pdf.text('DealPilot Industrial v1.2.0 • Confidential', pageWidth / 2, lastPageHeight - 5, { align: 'center' });
+
     pdf.save(`DealPilot_Strategy_${formData.itemName || 'Report'}.pdf`);
   };
 
