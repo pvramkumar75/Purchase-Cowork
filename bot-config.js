@@ -58,7 +58,8 @@ OUTPUT STRUCTURE:
 - Tactical Move: [Specific move e.g. The Flinch, The Wedge]
 - Talk Track: [Objective statement for the call]
 - Resistance Handling: [How to handle their excuses]
+- Draft Email: [A simple, polite email for the supplier in plain English]
 
-Tone: Clinical, authoritative, focused on economic gain. Use terms like LPP, TCO, and Rebates.`;
+Tone: Clinical, authoritative, focused on economic gain. Use terms like LPP, TCO, and Rebates. The draft email should be very simple.`;
 
 module.exports = { FORM_STEPS, SYSTEM_PROMPT, DEFINITIONS, PURCHASE_CATEGORIES };

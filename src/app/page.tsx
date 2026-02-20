@@ -160,6 +160,15 @@ export default function Home() {
         );
       }
 
+      // Handle Email sections
+      if (trimmedLine.startsWith('Subject:') || trimmedLine.startsWith('Dear') || trimmedLine.startsWith('Best regards')) {
+        return (
+          <div key={i} className="email-draft-line" style={{ color: 'var(--text-main)', fontFamily: 'monospace', fontSize: '0.9rem' }}>
+            {trimmedLine}
+          </div>
+        );
+      }
+
       return <div key={i} style={{ marginBottom: '0.75rem', color: 'var(--text-main)' }}>{trimmedLine}</div>;
     });
   };
@@ -300,7 +309,20 @@ export default function Home() {
                   <h4 style={{ color: 'var(--accent-color)', textTransform: 'uppercase', fontSize: '0.8rem', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', letterSpacing: '0.05rem' }}>
                     {section.split('\n')[0].trim()}
                   </h4>
-                  <div style={{ paddingLeft: '0.5rem' }}>
+                  <div style={{ paddingLeft: '0.5rem', position: 'relative' }}>
+                    {section.trim().includes('DRAFT NEGOTIATION EMAIL') && (
+                      <button
+                        className="btn btn-secondary"
+                        style={{ position: 'absolute', top: '-40px', right: '0', fontSize: '0.65rem', padding: '0.25rem 0.5rem' }}
+                        onClick={() => {
+                          const emailText = section.split('\n').slice(1).join('\n').replace(/\*\*/g, '').trim();
+                          navigator.clipboard.writeText(emailText);
+                          alert('Email draft copied to clipboard!');
+                        }}
+                      >
+                        COPY EMAIL
+                      </button>
+                    )}
                     {renderMaturedContent(section.split('\n').slice(1).join('\n').trim())}
                   </div>
                 </div>

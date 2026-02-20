@@ -105,4 +105,15 @@ OUTPUT STRUCTURE (Industrial Standard):
 - Avoid: [Low-leverage behaviors]
 - Next Step: [The "Walk" or the "Sign"]
 
-Tone: Authoritative, clinical, focused on economic gain and relationship control. No generic scripts. Use procurement terminology like LPP, TCO, and Rebates.`;
+### ✉️ DRAFT NEGOTIATION EMAIL
+(Please provide a ready-to-use email for the supplier in simple, polite, and precise English)
+Subject: Regarding our discussion on [Item Name] - [Supplier Name]
+
+Dear [Name],
+
+[Email body summarizing the proposal, price target, and delivery requirements in simple English]
+
+Best regards,
+[Name]
+
+Tone: Authoritative, clinical, focused on economic gain and relationship control. Use procurement terminology like LPP, TCO, and Rebates. The email part should be very simple and polite.`;
