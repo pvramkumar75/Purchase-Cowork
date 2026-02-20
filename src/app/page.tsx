@@ -121,22 +121,64 @@ export default function Home() {
   };
 
   // Group steps by category
-  const categories = Array.from(new Set(FORM_STEPS.map(s => s.category)));
+  const renderMaturedContent = (text: string) => {
+    // Remove all double asterisks (markdown bold) and clean up
+    const cleanText = text.replace(/\*\*/g, '');
 
+    return cleanText.split('\n').map((line, i) => {
+      const trimmedLine = line.trim();
+      if (!trimmedLine) return <div key={i} style={{ height: '0.5rem' }} />;
+
+      // Handle professional bullet points
+      if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ')) {
+        const [label, ...content] = trimmedLine.substring(2).split(':');
+        return (
+          <div key={i} style={{ display: 'flex', marginBottom: '0.5rem', paddingLeft: '0.5rem' }}>
+            <span style={{ color: 'var(--accent-color)', marginRight: '0.75rem' }}>•</span>
+            <div>
+              {content.length > 0 ? (
+                <>
+                  <span style={{ fontWeight: '600', color: '#f0f6fc' }}>{label}:</span>
+                  <span style={{ color: 'var(--text-main)' }}> {content.join(':')}</span>
+                </>
+              ) : (
+                <span style={{ color: 'var(--text-main)' }}>{label}</span>
+              )}
+            </div>
+          </div>
+        );
+      }
+
+      // Handle Script/Quote sections
+      if (trimmedLine.startsWith('Prompt:') || trimmedLine.startsWith('Resistance Handling:')) {
+        const [label, ...content] = trimmedLine.split(':');
+        return (
+          <div key={i} className="script-box" style={{ background: 'rgba(88, 166, 255, 0.05)', padding: '1rem', borderLeft: '3px solid var(--accent-color)', marginBottom: '1rem', borderRadius: '4px' }}>
+            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--accent-color)', marginBottom: '0.5rem', fontWeight: 'bold' }}>{label}</div>
+            <div style={{ fontStyle: 'italic', color: 'var(--text-main)' }}>"{content.join(':').trim()}"</div>
+          </div>
+        );
+      }
+
+      return <div key={i} style={{ marginBottom: '0.75rem', color: 'var(--text-main)' }}>{trimmedLine}</div>;
+    });
+  };
+
+  const categories = Array.from(new Set(FORM_STEPS.map(s => s.category)));
   const metrics = calculateMetrics();
 
   return (
     <main className="container">
       <header>
         <div className="logo-container">
-          <div className="logo-icon">DP</div>
+          <div className="logo-icon" style={{ borderRadius: '50%', background: 'linear-gradient(135deg, #58a6ff 0%, #1f6feb 100%)' }}>DP</div>
           <div>
-            <h1 style={{ fontSize: '1.5rem', marginBottom: '2px' }}>DealPilot</h1>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>INDUSTRIAL PROCUREMENT CO-PILOT</p>
+            <h1 style={{ fontSize: '1.25rem', letterSpacing: '0.05rem', fontWeight: '700' }}>DEALPILOT <span style={{ color: 'var(--accent-color)', fontWeight: '300' }}>INDUSTRIAL</span></h1>
+            <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1rem' }}>Sourcing & Negotiation Authority</p>
           </div>
         </div>
-        <button className="btn btn-secondary" onClick={() => setShowHistory(!showHistory)}>
-          {showHistory ? 'Back to Form' : 'History'}
+        <button className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '0.5rem 1rem' }} onClick={() => setShowHistory(!showHistory)}>
+          {showHistory ? 'ACTIVE WORKSPACE' : 'STRATEGY ARCHIVES'}
         </button>
       </header>
 
@@ -235,11 +277,11 @@ export default function Home() {
             <div className="markdown-content" style={{ fontSize: '1rem', lineHeight: '1.6', color: 'var(--text-main)' }}>
               {result.split('###').map((section, i) => i === 0 ? null : (
                 <div key={i} style={{ marginBottom: '2rem' }}>
-                  <h4 style={{ color: 'var(--accent-color)', textTransform: 'uppercase', fontSize: '0.9rem', marginBottom: '0.75rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+                  <h4 style={{ color: 'var(--accent-color)', textTransform: 'uppercase', fontSize: '0.8rem', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', letterSpacing: '0.05rem' }}>
                     {section.split('\n')[0].trim()}
                   </h4>
-                  <div style={{ whiteSpace: 'pre-wrap', paddingLeft: '0.5rem' }}>
-                    {section.split('\n').slice(1).join('\n').trim()}
+                  <div style={{ paddingLeft: '0.5rem' }}>
+                    {renderMaturedContent(section.split('\n').slice(1).join('\n').trim())}
                   </div>
                 </div>
               ))}
