@@ -174,7 +174,7 @@ export default function Home() {
           <div className="logo-icon" style={{ borderRadius: '50%', background: 'linear-gradient(135deg, #58a6ff 0%, #1f6feb 100%)' }}>DP</div>
           <div>
             <h1 style={{ fontSize: '1.25rem', letterSpacing: '0.05rem', fontWeight: '700' }}>DEALPILOT <span style={{ color: 'var(--accent-color)', fontWeight: '300' }}>INDUSTRIAL</span></h1>
-            <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1rem' }}>Sourcing & Negotiation Authority</p>
+            <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1rem' }}>Sourcing Authority • v1.1.0</p>
           </div>
         </div>
         <button className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '0.5rem 1rem' }} onClick={() => setShowHistory(!showHistory)}>

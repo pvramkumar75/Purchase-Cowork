@@ -38,7 +38,7 @@ export async function POST(req: Request) {
         const text = body.message.text;
 
         if (text === '/start') {
-            await sendTelegramMessage(chatId, "🏢 *DealPilot Industrial Procurement Bot*\n\nType /negotiate to start.");
+            await sendTelegramMessage(chatId, "🏢 *DealPilot Industrial Procurement Bot* (v1.1.0)\n\nType /negotiate to start.");
             return NextResponse.json({ ok: true });
         }
 

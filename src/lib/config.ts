@@ -7,73 +7,74 @@ export interface FormStep {
 }
 
 export const FORM_STEPS: FormStep[] = [
-    { key: 'itemName', label: 'Item / Part Name', type: 'text', category: 'General' },
-    { key: 'supplierName', label: 'Supplier Name', type: 'text', category: 'General' },
+    { key: 'itemName', label: 'Purchase Item (Material / Component / Service)', type: 'text', category: 'General' },
+    { key: 'supplierName', label: 'Supplier / Service Provider Name', type: 'text', category: 'General' },
 
-    { key: 'lastPrice', label: 'Last Purchase Price', type: 'number', category: 'Price' },
-    { key: 'currentQuote', label: 'Vendor Current Quote', type: 'number', category: 'Price' },
-    { key: 'targetPrice', label: 'Target / Expected Price', type: 'number', category: 'Price' },
-    { key: 'annualQuantity', label: 'Annual Quantity', type: 'text', category: 'Price' },
-    { key: 'costKnowledge', label: 'Vendor Cost Knowledge', type: 'select', options: ['None', 'Rough', 'Detailed'], category: 'Price' },
-    { key: 'rmTrend', label: 'Raw Material Trend', type: 'select', options: ['Decrease %', 'Stable', 'Increase %'], category: 'Price' },
+    { key: 'lastPrice', label: 'Benchmark Price (Last Paid / Market Rate)', type: 'number', category: 'Commercial' },
+    { key: 'currentQuote', label: 'Vendor Current Quote', type: 'number', category: 'Commercial' },
+    { key: 'targetPrice', label: 'Target / Baseline Price', type: 'number', category: 'Commercial' },
+    { key: 'annualQuantity', label: 'Annual Usage / Consumption Volume', type: 'text', category: 'Commercial' },
+    { key: 'costKnowledge', label: 'Should-Cost Knowledge (Our understanding of their cost)', type: 'select', options: ['High Level', 'Detailed Breakdown', 'No Visibility'], category: 'Commercial' },
+    { key: 'rmTrend', label: 'Market / Input Cost Trend (Commodity/Labour Trends)', type: 'select', options: ['Decreasing', 'Stable', 'Increasing'], category: 'Commercial' },
 
-    { key: 'stock', label: 'Current Stock', type: 'select', options: ['Less than 3 days', '1 week', '2-4 weeks', 'Safe'], category: 'Supply' },
-    { key: 'stoppageRisk', label: 'Line Stoppage Risk', type: 'select', options: ['Immediate', 'This week', 'This month', 'No risk'], category: 'Supply' },
-    { key: 'alternateTime', label: 'Alternate Approval Time', type: 'select', options: ['Approved', '2 weeks', '2 months', 'Not possible'], category: 'Supply' },
-    { key: 'tooling', label: 'Tool Ownership', type: 'select', options: ['Company', 'Vendor', 'Shared', 'No tooling'], category: 'Supply' },
+    { key: 'stock', label: 'Supply Coverage (Inventory / Lead-time Buffer)', type: 'select', options: ['Critical (<3 days)', 'Low (1 week)', 'Moderate (2-4 weeks)', 'Secure (>1 month)'], category: 'Supply Risk' },
+    { key: 'stoppageRisk', label: 'Business Interruption Risk (Impact of non-delivery)', type: 'select', options: ['Total Stoppage', 'Partial Impact', 'Delayed Project', 'Limited Risk'], category: 'Supply Risk' },
+    { key: 'alternateTime', label: 'Time to Switch Source (Switching Speed)', type: 'select', options: ['Switchable Today', '2 weeks (Fast)', '2-3 months (Medium)', '6 months+ (Locked)'], category: 'Supply Risk' },
+    { key: 'tooling', label: 'Ownership of Specific Assets (IP/Moulds/Software/Hardware)', type: 'select', options: ['Company Owned', 'Vender Owned', 'Jointly Owned', 'No Specific Assets'], category: 'Supply Risk' },
 
-    { key: 'otherSuppliers', label: 'Other Suppliers', type: 'select', options: ['None', 'Risky', '2-3 workable', 'Many'], category: 'Vendor' },
-    { key: 'vendorLoad', label: 'Vendor Load', type: 'select', options: ['Overloaded', 'Normal', 'Hungry'], category: 'Vendor' },
-    { key: 'paymentTerms', label: 'Payment Terms', type: 'select', options: ['Advance', 'Short', 'Normal', 'Long'], category: 'Vendor' },
+    { key: 'otherSuppliers', label: 'Market Alternates (Qualified Competitors)', type: 'select', options: ['Sole Source', '2-3 Qualified', 'Many Qualified', 'Highly Monopolistic'], category: 'Leverage' },
+    { key: 'vendorLoad', label: 'Supplier Capacity Load (How busy are they?)', type: 'select', options: ['Near Capacity', 'Normal Operation', 'Seeking Volume (Hungry)'], category: 'Leverage' },
+    { key: 'paymentTerms', label: 'Commercial Terms (Payment Days/Credit)', type: 'select', options: ['Pre-payment', 'Short Terms (<30)', 'Normal Terms (30-60)', 'Extended Terms (>60)'], category: 'Leverage' },
 
-    { key: 'responseSpeed', label: 'Response Speed', type: 'select', options: ['Avoiding', 'Slow', 'Normal', 'Eager'], category: 'Behavior' },
-    { key: 'increaseReason', label: 'Reason for Increase', type: 'select', options: ['RM', 'Labour', 'Power', 'Demand', 'Unclear'], category: 'Behavior' },
-    { key: 'attitude', label: 'Attitude', type: 'select', options: ['Defensive', 'Emotional', 'Aggressive', 'Cooperative', 'Bluff feel'], category: 'Behavior' },
-    { key: 'immediateAsk', label: 'Asking Immediate Confirmation', type: 'select', options: ['Strong', 'Mild', 'No'], category: 'Behavior' },
+    { key: 'responseSpeed', label: 'Supplier Engagement Speed', type: 'select', options: ['Avoiding / Strategic Delay', 'Slow / Bureaucratic', 'Responsive', 'Very Proactive'], category: 'Behavior' },
+    { key: 'increaseReason', label: 'Stated Reason for Increase', type: 'select', options: ['Material / Commodity', 'Labour / Overheads', 'Energy / Logistics', 'Market Shortage', 'No Clear Reason'], category: 'Behavior' },
+    { key: 'attitude', label: 'Supplier Communication Style', type: 'select', options: ['Defensive', 'Aggressive', 'Partnership Driven', 'Bluff feel'], category: 'Behavior' },
+    { key: 'immediateAsk', label: 'Level of Pressure for Immediate Decision', type: 'select', options: ['Hard Ultimatum', 'Mild Pressure', 'Standard Quote Time'], category: 'Behavior' },
 
-    { key: 'fixedOnVendor', label: 'Company Fixed on Vendor', type: 'select', options: ['Fixed', 'Prefer', 'Free'], category: 'Constraint' },
-    { key: 'whyFixed', label: 'Why Fixed', type: 'multi-select', options: ['Customer spec', 'Design', 'Reliability', 'Management', 'Agreement'], category: 'Constraint' },
-    { key: 'qtyFlexibility', label: 'Quantity Flexibility', type: 'select', options: ['No', 'Partial', 'Yes'], category: 'Constraint' },
-    { key: 'specRelaxation', label: 'Spec Relaxation Possible', type: 'select', options: ['No', 'Maybe', 'Yes'], category: 'Constraint' },
-    { key: 'internalSupport', label: 'Internal Support', type: 'select', options: ['Strong', 'Neutral', 'Weak'], category: 'Constraint' }
+    { key: 'fixedOnVendor', label: 'Technical Lock-in Level', type: 'select', options: ['Totally Locked', 'Prefer this Source', 'Open to Change'], category: 'Constraints' },
+    { key: 'whyFixed', label: 'Primary Constraint (Why are we with them?)', type: 'multi-select', options: ['Proprietary IP', 'Customer Specified', 'Past Performance', 'Specialized Geo', 'Framework Agreement'], category: 'Constraints' },
+    { key: 'qtyFlexibility', label: 'Our Volume Flexibility (Can we move volume?)', type: 'select', options: ['Strict (No)', 'Partial Shift', 'Full Flexibility (Yes)'], category: 'Constraints' },
+    { key: 'specRelaxation', label: 'Specification Flexibility (Can we change requirements?)', type: 'select', options: ['No Flexibility', 'Minor Changes', 'Major Re-spec Possible'], category: 'Constraints' },
+    { key: 'internalSupport', label: 'Internal Stakeholder Alignment', type: 'select', options: ['Strong Support to Change', 'Neutral / Cautious', 'Resistant to Change'], category: 'Constraints' }
 ];
 
-export const SYSTEM_PROMPT = `You are a high-level Industrial Procurement Strategist (CPO Level). 
-Your output must be a matured, professional industrial report.
+export const SYSTEM_PROMPT = `You are a world-class Industrial Procurement Specialist (CPO Level). 
+Your output must be a clinical, high-stakes negotiation playbook. 
 
-CORE ANALYSIS REQUIRED:
-1. KRALJIC POSITION: (Strategic, Bottleneck, Leverage, or Non-critical)
-2. BATNA: (Your Best Alternative to This Negotiated Agreement)
-3. ZOPA: (Zone of Possible Agreement based on price gap)
-4. TCO: (Total Cost of Ownership considerations)
+CORE ANALYSIS:
+1. POSITION: Kraljic (Strategic/Bottleneck/Leverage/Non-critical).
+2. POWER BALANCE: Who truly holds the cards based on lead-times, stock, and alternates.
+3. THE WEDGE: Identify what the supplier needs more than cash (e.g., capacity utilization, predictability, reference value).
 
-OUTPUT STRUCTURE (Follow strictly):
+OUTPUT STRUCTURE (Industrial Standard):
 
 ### 📊 STRATEGIC POSITIONING
 - Matrix Category: [Category]
 - Power Balance: [Balance]
-- BATNA: [Your alternative plan]
-- ZOPA: [Expected price range for agreement]
+- BATNA: [Alternative plan]
+- ZOPA: [Zone of possible agreement]
 
 ### 💡 THE CORE STRATEGY
-[Executive summary of the approach]
+[Executive summary of the psychological approach. E.g., "The Reluctant Buyer" or "The Volume Anchor".]
 
-### 🎯 NEGOTIATION TACTICS
-- Primary Move: [Step 1]
-- Secondary Move: [Step 2]
-- Leverage Points: [List key points]
+### 🎯 TACTICAL MOVES (The Playbook)
+1. THE ANCHOR: [Specific price/starting point to set the baseline]
+2. THE FLINCH: [How to react to their quote to signal a limit]
+3. THE WEDGE: [What non-price item to ask for or yield to gain leverage]
+4. THE TRADE-OFF: [E.g., Price vs Payment Terms vs Forecast Visibility]
 
-### 💬 THE SCRIPT
-Prompt: [What to say]
-Resistance Handling: [How to respond to "No"]
+### 💬 NEGOTIATION TALK TRACKS
+- Opening Statement: [Objective, data-driven lead-in]
+- Handling Resistance: [How to bypass their "Standard Cost" or "RM Increase" excuses without confrontation]
+- The Close: [How to lock the delivery date and price together]
 
-### ⚠️ RISK & AVOIDANCE
-- Avoid: [What not to do]
-- Risk: [Critical risks]
-
-### 📉 FINANCIAL IMPACT
+### 📉 FINANCIAL IMPACT & LIMITS
 - Target Price: [Target]
 - Max Ceiling: [Ceiling]
-- Annual Impact: [Calculated value]
+- Trade-off Valuations: [Value of payment terms or qty shifts]
 
-Tone: Clinical, data-driven, authoritative. Avoid excessive symbols like asterisks.`;
+### 🛡️ RISK & ALTERNATIVES
+- Avoid: [Low-leverage behaviors]
+- Next Step: [The "Walk" or the "Sign"]
+
+Tone: Authoritative, clinical, focused on economic gain and relationship control. No generic scripts. Use procurement terminology like LPP, TCO, and Rebates.`;

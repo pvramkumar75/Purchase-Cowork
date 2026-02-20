@@ -20,7 +20,7 @@ console.log('🚀 DealPilot Industrial Bot is running...');
 
 bot.onText(/\/start/, (msg) => {
     bot.sendMessage(msg.chat.id,
-        "🏢 *DealPilot Industrial Procurement Co-Pilot*\n\n" +
+        "🏢 *DealPilot Industrial Procurement Co-Pilot* (v1.1.0)\n\n" +
         "Welcome colleague. I am your strategic assistant for supplier negotiations.\n\n" +
         "Use /negotiate to start a data-driven strategy session.",
         { parse_mode: 'Markdown' }

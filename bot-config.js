@@ -1,52 +1,51 @@
 const FORM_STEPS = [
-    { key: 'itemName', label: '📦 Item / Part Name', type: 'text', category: 'General' },
-    { key: 'supplierName', label: '🏢 Supplier Name', type: 'text', category: 'General' },
+    { key: 'itemName', label: '📦 Purchase Item (Material / Component / Service)', type: 'text', category: 'General' },
+    { key: 'supplierName', label: '🏢 Supplier / Service Provider Name', type: 'text', category: 'General' },
 
-    { key: 'lastPrice', label: '💰 Last Purchase Price', type: 'number', category: 'Price' },
-    { key: 'currentQuote', label: '📈 Vendor Current Quote', type: 'number', category: 'Price' },
-    { key: 'targetPrice', label: '🎯 Target / Expected Price', type: 'number', category: 'Price' },
-    { key: 'annualQuantity', label: '📊 Annual Quantity', type: 'text', category: 'Price' },
-    { key: 'costKnowledge', label: '🔍 Vendor Cost Knowledge', type: 'select', options: ['None', 'Rough', 'Detailed'] },
-    { key: 'rmTrend', label: '📉 Raw Material Trend', type: 'select', options: ['Decrease %', 'Stable', 'Increase %'] },
+    { key: 'lastPrice', label: '💰 Benchmark Price (Last Paid / Market Rate)', type: 'number', category: 'Commercial' },
+    { key: 'currentQuote', label: '📈 Vendor Current Quote', type: 'number', category: 'Commercial' },
+    { key: 'targetPrice', label: '🎯 Target / Baseline Price', type: 'number', category: 'Commercial' },
+    { key: 'annualQuantity', label: '📊 Annual Usage / Consumption Volume', type: 'text', category: 'Commercial' },
+    { key: 'costKnowledge', label: '🔍 Should-Cost Knowledge', type: 'select', options: ['High Level', 'Detailed Breakdown', 'No Visibility'] },
+    { key: 'rmTrend', label: '📈 Market / Input Cost Trend', type: 'select', options: ['Decreasing', 'Stable', 'Increasing'] },
 
-    { key: 'stock', label: '📦 Current Stock', type: 'select', options: ['Less than 3 days', '1 week', '2-4 weeks', 'Safe'] },
-    { key: 'stoppageRisk', label: '⚠️ Line Stoppage Risk', type: 'select', options: ['Immediate', 'This week', 'This month', 'No risk'] },
-    { key: 'alternateTime', label: '⏱️ Alternate Approval Time', type: 'select', options: ['Approved', '2 weeks', '2 months', 'Not possible'] },
-    { key: 'tooling', label: '🛠️ Tool Ownership', type: 'select', options: ['Company', 'Vendor', 'Shared', 'No tooling'] },
+    { key: 'stock', label: '🛡️ Supply Coverage (Inventory / Buffer)', type: 'select', options: ['Critical (<3 days)', 'Low (1 week)', 'Moderate (2-4 weeks)', 'Secure (>1 month)'] },
+    { key: 'stoppageRisk', label: '⚠️ Business Interruption Risk', type: 'select', options: ['Total Stoppage', 'Partial Impact', 'Delayed Project', 'Limited Risk'] },
+    { key: 'alternateTime', label: '⏱️ Time to Switch Source', type: 'select', options: ['Switchable Today', '2 weeks (Fast)', '2-3 months (Medium)', '6 months+ (Locked)'] },
+    { key: 'tooling', label: '🛠️ Ownership of Specific Assets (IP/Moulds)', type: 'select', options: ['Company Owned', 'Vender Owned', 'Jointly Owned', 'No Specific Assets'] },
 
-    { key: 'otherSuppliers', label: '🤝 Market Competition', type: 'select', options: ['None', 'Risky', '2-3 workable', 'Many'] },
-    { key: 'vendorLoad', label: '🏭 Vendor Capacity Load', type: 'select', options: ['Overloaded', 'Normal', 'Hungry'] },
-    { key: 'paymentTerms', label: '💳 Payment Terms', type: 'select', options: ['Advance', 'Short', 'Normal', 'Long'] },
+    { key: 'otherSuppliers', label: '🤝 Market Alternates (Qualified Competitors)', type: 'select', options: ['Sole Source', '2-3 Qualified', 'Many Qualified', 'Highly Monopolistic'] },
+    { key: 'vendorLoad', label: '🏭 Supplier Capacity Load', type: 'select', options: ['Near Capacity', 'Normal Operation', 'Seeking Volume (Hungry)'] },
+    { key: 'paymentTerms', label: '💳 Commercial Terms (Payment/Credit)', type: 'select', options: ['Pre-payment', 'Short Terms (<30)', 'Normal Terms (30-60)', 'Extended Terms (>60)'] },
 
-    { key: 'responseSpeed', label: '⚡ Response Speed', type: 'select', options: ['Avoiding', 'Slow', 'Normal', 'Eager'] },
-    { key: 'increaseReason', label: '❓ Reason for Increase', type: 'select', options: ['RM', 'Labour', 'Power', 'Demand', 'Unclear'] },
-    { key: 'attitude', label: '🎭 Vendor Attitude', type: 'select', options: ['Defensive', 'Emotional', 'Aggressive', 'Cooperative', 'Bluff feel'] },
-    { key: 'immediateAsk', label: '⏰ Pressure Level', type: 'select', options: ['Strong', 'Mild', 'No'] },
+    { key: 'responseSpeed', label: '⚡ Supplier Engagement Speed', type: 'select', options: ['Avoiding / Strategic Delay', 'Slow / Bureaucratic', 'Responsive', 'Very Proactive'] },
+    { key: 'increaseReason', label: '❓ Stated Reason for Increase', type: 'select', options: ['Material / Commodity', 'Labour / Overheads', 'Energy / Logistics', 'Market Shortage', 'No Clear Reason'] },
+    { key: 'attitude', label: '🗣️ Supplier Communication Style', type: 'select', options: ['Defensive', 'Aggressive', 'Partnership Driven', 'Bluff feel'] },
+    { key: 'immediateAsk', label: '⏰ Level of Pressure', type: 'select', options: ['Hard Ultimatum', 'Mild Pressure', 'Standard Quote Time'] },
 
-    { key: 'fixedOnVendor', label: '🔒 Sourcing Freedom', type: 'select', options: ['Fixed', 'Prefer', 'Free'] },
-    { key: 'whyFixed', label: '🧐 Why Fixed', type: 'text' },
-    { key: 'qtyFlexibility', label: '🔄 Quantity Flexibility', type: 'select', options: ['No', 'Partial', 'Yes'] },
-    { key: 'specRelaxation', label: '⚙️ Spec Relaxation Possible', type: 'select', options: ['No', 'Maybe', 'Yes'] },
-    { key: 'internalSupport', label: '📣 Internal Support', type: 'select', options: ['Strong', 'Neutral', 'Weak'] }
+    { key: 'fixedOnVendor', label: '🔒 Technical Lock-in Level', type: 'select', options: ['Totally Locked', 'Prefer this Source', 'Open to Change'] },
+    { key: 'whyFixed', label: '🧐 Primary Constraint (Why are we fixed?)', type: 'select', options: ['Proprietary IP', 'Customer Specified', 'Past Performance', 'Specialized Geo', 'Framework Agreement'] },
+    { key: 'qtyFlexibility', label: '🔄 Volume Flexibility (Can we move volume?)', type: 'select', options: ['Strict (No)', 'Partial Shift', 'Full Flexibility (Yes)'] },
+    { key: 'specRelaxation', label: '🧪 Requirement Flexibility', type: 'select', options: ['No Flexibility', 'Minor Changes', 'Major Re-spec Possible'] },
+    { key: 'internalSupport', label: '📣 Internal Stakeholder Alignment', type: 'select', options: ['Strong Support to Change', 'Neutral / Cautious', 'Resistant to Change'] }
 ];
 
-const SYSTEM_PROMPT = `You are a high-level Industrial Procurement Strategist (CPO Level). 
-Your output must be a matured, professional industrial report.
+const SYSTEM_PROMPT = `You are a world-class Industrial Procurement Specialist (CPO Level). 
+Your output must be a clinical, high-stakes negotiation playbook. 
 
-CORE ANALYSIS REQUIRED:
-1. KRALJIC POSITION: (Strategic, Bottleneck, Leverage, or Non-critical)
-2. BATNA: (Your Best Alternative to This Negotiated Agreement)
-3. ZOPA: (Zone of Possible Agreement based on price gap)
-4. TCO: (Total Cost of Ownership considerations)
+CORE ANALYSIS:
+1. POSITION: Kraljic Category.
+2. POWER BALANCE: Diagnosis of leverage.
+3. THE WEDGE: What the supplier needs more than cash.
 
 OUTPUT STRUCTURE:
-- Position: [Kraljic Matrix Category]
-- BATNA: [Your alternative plan]
-- ZOPA: [Expected price range]
-- Core Strategy: [Summary]
-- Script: [What to say]
-- Concession Limit: [Ceiling]
+- Position: [Kraljic Category]
+- Strategy: [Summary of the approach]
+- The Anchor: [Starting price/target]
+- Tactical Move: [Specific move e.g. The Flinch, The Wedge]
+- Talk Track: [Objective statement for the call]
+- Resistance Handling: [How to handle their excuses]
 
-Tone: Clinical, data-driven, authoritative. Avoid excessive asterisks.`;
+Tone: Clinical, authoritative, focused on economic gain. Use terms like LPP, TCO, and Rebates.`;
 
 module.exports = { FORM_STEPS, SYSTEM_PROMPT };
