@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DealPilot Industrial 🚀
 
-## Getting Started
+**The Strategic Negotiation Co-Pilot for Professional Procurement.**
 
-First, run the development server:
+DealPilot is an industrial-grade assistant designed for purchase heads and sourcing managers. It eliminates guesswork in supplier negotiations by calculating leverage, predicting supplier intent, and generating data-driven negotiation strategies.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## ✨ Industrial Features
+
+*   **Strategic Positioning:** Automatically classifies items into the Kraljic Matrix (Strategic, Bottleneck, Leverage, Non-critical).
+*   **Financial Analytics:** Real-time calculation of price delta, percentage change, and annual cost impact.
+*   **AI-Powered Playbook:** Generates clinical, professional scripts and tactical moves based on 25+ years of sourcing expertise.
+*   **Dual Interface:** 
+    *   **Dashboard:** A high-performance web UI with live metrics and history tracking.
+    *   **Telegram Bot:** An interactive, mobile-ready assistant for negotiations on the go.
+*   **Industrial Reports:** Export professional strategy documents in PDF format for internal approval.
+
+## 🛠 Tech Stack
+
+*   **Frontend:** Next.js 15, React, TypeScript
+*   **AI:** DeepSeek-V3 API (Industrial Procurement Tuned)
+*   **State:** Vercel KV (for serverless), LocalStorage (for web history)
+*   **Bot:** node-telegram-bot-api (Interactive Inline mode)
+
+## 🚀 Getting Started
+
+### 1. Environment Setup
+Create a `.env.local` file with your credentials:
+```env
+DEEPSEEK_API_KEY=your_key
+TELEGRAM_BOT_TOKEN=your_token
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Run the Web Dashboard
+```bash
+npm install
+npm run dev
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. Run the Telegram Bot (Local/Industrial Mode)
+To keep the bot alive for real-time negotiations:
+```bash
+node telegram-bot.js
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📊 Industrial Negotiation Framework
+DealPilot follows the **SP-TACTIC** framework:
+1. **S**ourcing Strategy Selection
+2. **P**ower Balance Diagnosis
+3. **T**arget Price Calculation (ZOPA)
+4. **A**lternative Planning (BATNA)
+5. **C**ommunication Scripting
+6. **T**rade-off Mapping
+7. **I**mpact Assessment
+8. **C**oncession Boundary Definition
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+*Confidentiality: All negotiation data is processed securely and intended for internal procurement decision-making only.*

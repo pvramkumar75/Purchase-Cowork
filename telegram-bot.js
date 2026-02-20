@@ -1,6 +1,7 @@
 const TelegramBot = require('node-telegram-bot-api');
 const dotenv = require('dotenv');
-const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+const fetch = require('node-fetch');
+const { FORM_STEPS, SYSTEM_PROMPT } = require('./bot-config');
 
 dotenv.config({ path: '.env.local' });
 
@@ -13,127 +14,131 @@ if (!token) {
 }
 
 const bot = new TelegramBot(token, { polling: true });
-
-console.log('DealPilot Telegram Bot is running (CommonJS mode)...');
-
-const systemPrompt = `You are a senior procurement negotiation strategist with 25+ years industrial sourcing experience.
-Your purpose is NOT to teach negotiation theory.
-Your purpose is to calculate the economically rational next move in a live supplier negotiation.
-Thin in terms of leverage, dependency, alternatives, time pressure, switching cost, supplier psychology, bluff probability, and concession sequencing.
-Never give motivational advice.
-Respond like an experienced purchase head coaching another purchase head privately.
-Output format exactly:
-NEGOTIATION MODE:
-POSITION:
-SUPPLIER INTENT:
-NEXT MOVE:
-SAY THIS:
-AVOID THIS:
-CONCESSION LIMIT:
-ESCALATION PLAN:
-Be concise and practical.`;
-
 const userStates = {};
 
-const formSteps = [
-    { key: 'itemName', label: 'Item / Part Name' },
-    { key: 'supplierName', label: 'Supplier Name' },
-    { key: 'lastPrice', label: 'Last Purchase Price (Number)' },
-    { key: 'currentQuote', label: 'Vendor Current Quote (Number)' },
-    { key: 'targetPrice', label: 'Target / Expected Price (Number)' },
-    { key: 'annualQuantity', label: 'Annual Quantity' },
-    { key: 'costKnowledge', label: 'Vendor Cost Knowledge (None / Rough / Detailed)' },
-    { key: 'rmTrend', label: 'Raw Material Trend (Decrease / Stable / Increase %)' },
-    { key: 'stock', label: 'Current Stock (Less than 3 days / 1 week / 2-4 weeks / Safe)' },
-    { key: 'stoppageRisk', label: 'Line Stoppage Risk (Immediate / This week / This month / No risk)' },
-    { key: 'alternateTime', label: 'Alternate Approval Time (Approved / 2 weeks / 2 months / Not possible)' },
-    { key: 'tooling', label: 'Tool Ownership (Company / Vendor / Shared / No tooling)' },
-    { key: 'otherSuppliers', label: 'Other Suppliers (None / Risky / 2-3 workable / Many)' },
-    { key: 'vendorLoad', label: 'Vendor Load (Overloaded / Normal / Hungry)' },
-    { key: 'paymentTerms', label: 'Payment Terms (Advance / Short / Normal / Long)' },
-    { key: 'responseSpeed', label: 'Response Speed (Avoiding / Slow / Normal / Eager)' },
-    { key: 'increaseReason', label: 'Reason for Increase (RM / Labour / Power / Demand / Unclear)' },
-    { key: 'attitude', label: 'Attitude (Defensive / Emotional / Aggressive / Cooperative / Bluff feel)' },
-    { key: 'immediateAsk', label: 'Asking immediate confirmation (Strong / Mild / No)' },
-    { key: 'fixedOnVendor', label: 'Company fixed on vendor (Fixed / Prefer / Free)' },
-    { key: 'whyFixed', label: 'Why fixed (Customer spec / Design / Reliability / Management / Agreement)' },
-    { key: 'qtyFlexibility', label: 'Quantity flexibility (No / Partial / Yes)' },
-    { key: 'specRelaxation', label: 'Spec relaxation possible (No / Maybe / Yes)' },
-    { key: 'internalSupport', label: 'Internal support (Strong / Neutral / Weak)' }
-];
+console.log('🚀 DealPilot Industrial Bot is running...');
 
 bot.onText(/\/start/, (msg) => {
-    const chatId = msg.chat.id;
-    bot.sendMessage(chatId, "👋 Welcome to DealPilot Negotiation Co-Pilot.\n\nType /negotiate to start a fresh guidance session.");
+    bot.sendMessage(msg.chat.id,
+        "🏢 *DealPilot Industrial Procurement Co-Pilot*\n\n" +
+        "Welcome colleague. I am your strategic assistant for supplier negotiations.\n\n" +
+        "Use /negotiate to start a data-driven strategy session.",
+        { parse_mode: 'Markdown' }
+    );
 });
 
 bot.onText(/\/negotiate/, (msg) => {
     const chatId = msg.chat.id;
     userStates[chatId] = { step: 0, data: {} };
-    bot.sendMessage(chatId, `Step 1: ${formSteps[0].label}`);
+    askStep(chatId);
 });
 
-bot.on('message', async (msg) => {
-    const chatId = msg.chat.id;
-    const text = msg.text;
-
-    if (!text || text.startsWith('/')) return;
-    if (!userStates[chatId]) return;
-
+async function askStep(chatId) {
     const state = userStates[chatId];
-    const currentStep = formSteps[state.step];
+    if (!state) return;
 
-    state.data[currentStep.key] = text;
+    const step = FORM_STEPS[state.step];
+    if (!step) {
+        finishNegotiation(chatId);
+        return;
+    }
+
+    if (step.options) {
+        const keyboard = step.options.map(opt => [{ text: opt, callback_data: opt }]);
+        bot.sendMessage(chatId, `*Step ${state.step + 1}:* ${step.label}`, {
+            parse_mode: 'Markdown',
+            reply_markup: { inline_keyboard: keyboard }
+        });
+    } else {
+        bot.sendMessage(chatId, `*Step ${state.step + 1}:* ${step.label}`, { parse_mode: 'Markdown' });
+    }
+}
+
+bot.on('callback_query', (query) => {
+    const chatId = query.message.chat.id;
+    const state = userStates[chatId];
+
+    if (!state) return;
+
+    const step = FORM_STEPS[state.step];
+    state.data[step.key] = query.data;
     state.step++;
 
-    if (state.step < formSteps.length) {
-        bot.sendMessage(chatId, `Step ${state.step + 1}: ${formSteps[state.step].label}`);
-    } else {
-        bot.sendMessage(chatId, "🔄 Analyzing data and calculating strategy...");
+    bot.answerCallbackQuery(query.id);
+    askStep(chatId);
+});
 
-        try {
-            const userPrompt = `NEGOTIATION DATA:\n` + Object.keys(state.data).map(k => `${k}: ${state.data[k]}`).join('\n');
+bot.on('message', (msg) => {
+    const chatId = msg.chat.id;
+    const text = msg.text;
+    const state = userStates[chatId];
 
-            const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${deepseekApiKey}`
-                },
-                body: JSON.stringify({
-                    model: 'deepseek-chat',
-                    messages: [
-                        { role: 'system', content: systemPrompt },
-                        { role: 'user', content: userPrompt }
-                    ],
-                    temperature: 0.2
-                })
-            });
+    if (!state || !text || text.startsWith('/')) return;
 
-            const aiResult = await response.json();
-            const guidance = aiResult.choices[0].message.content;
+    const step = FORM_STEPS[state.step];
+    if (step.options) return; // Wait for callback query
 
-            const itemName = state.data.itemName || 'Item';
-            const supplierName = state.data.supplierName || 'N/A';
+    state.data[step.key] = text;
+    state.step++;
+    askStep(chatId);
+});
 
-            await bot.sendMessage(chatId, `📋 *NEGOTIATION REPORT: ${itemName}*\n🏢 *Supplier:* ${supplierName}\n\nAnalyzing data and calculating strategy...`, { parse_mode: 'Markdown' });
+async function finishNegotiation(chatId) {
+    const state = userStates[chatId];
+    bot.sendMessage(chatId, "📊 *Data Collection Complete.*\nCalculating Industrial Strategy...", { parse_mode: 'Markdown' });
 
-            const sections = guidance.split(/\n(?=[A-Z\s]+:)/);
-            for (const section of sections) {
-                if (section.trim()) {
-                    await bot.sendMessage(chatId, section.trim());
-                }
-            }
+    try {
+        const data = state.data;
+        const lastPrice = parseFloat(data.lastPrice) || 0;
+        const currentQuote = parseFloat(data.currentQuote) || 0;
+        const targetPrice = parseFloat(data.targetPrice) || 0;
+        const annualQty = parseFloat(data.annualQuantity?.replace(/,/g, '')) || 0;
 
-            bot.sendMessage(chatId, "✅ Negotiation strategy complete. Type /negotiate to start again.");
-            delete userStates[chatId];
-        } catch (error) {
-            bot.sendMessage(chatId, `❌ Error calling AI: ${error.message}`);
-            delete userStates[chatId];
+        const priceIncrease = lastPrice > 0 ? ((currentQuote - lastPrice) / lastPrice) * 100 : 0;
+        const annualImpact = (currentQuote - lastPrice) * annualQty;
+
+        const userPrompt = `INDUSTRIAL NEGOTIATION DATA:
+- Item: ${data.itemName}
+- Supplier: ${data.supplierName}
+- Current Impact: ${priceIncrease.toFixed(2)}% increase | Annual Impact: ${annualImpact.toFixed(2)}
+- Stock: ${data.stock} | Risk: ${data.stoppageRisk}
+- Competition: ${data.otherSuppliers} | Load: ${data.vendorLoad}
+- Behavior: ${data.attitude} | Reason: ${data.increaseReason}
+- Constraint: ${data.fixedOnVendor}
+
+Full Data: ${JSON.stringify(data)}`;
+
+        const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${deepseekApiKey}`
+            },
+            body: JSON.stringify({
+                model: 'deepseek-chat',
+                messages: [
+                    { role: 'system', content: SYSTEM_PROMPT },
+                    { role: 'user', content: userPrompt }
+                ],
+                temperature: 0.15
+            })
+        });
+
+        const result = await response.json();
+        const guidance = result.choices[0].message.content;
+
+        // Split long messages for Telegram
+        const chunks = guidance.match(/[\s\S]{1,4000}(?:\n|$)/g) || [guidance];
+        for (const chunk of chunks) {
+            await bot.sendMessage(chatId, chunk, { parse_mode: 'Markdown' });
         }
-    }
-});
 
-bot.on('polling_error', (error) => {
-    console.log('Polling error:', error.code);
-});
+        bot.sendMessage(chatId, "✅ *Session Complete.*\nType /negotiate for a new strategy.");
+        delete userStates[chatId];
+
+    } catch (error) {
+        console.error(error);
+        bot.sendMessage(chatId, "❌ *Error:* Failed to calculate strategy. Please try again later.");
+        delete userStates[chatId];
+    }
+}

@@ -1,82 +1,53 @@
-export const systemPrompt = `You are a senior procurement negotiation strategist with 25+ years industrial sourcing experience.
-
-Your purpose is NOT to teach negotiation theory.
-Your purpose is to calculate the economically rational next move in a live supplier negotiation.
-
-Think in terms of leverage, dependency, alternatives, time pressure, switching cost, supplier psychology, bluff probability, and concession sequencing.
-
-Never give motivational advice.
-Respond like an experienced purchase head coaching another purchase head privately.
-
-STEP 1 — classify negotiation mode:
-Competitive / Controlled / Locked
-
-STEP 2 — diagnose power balance:
-Weak / Neutral / Advantage / Dominant
-
-STEP 3 — detect supplier intent:
-Bluff / Defensive / Capacity constrained / Opportunistic / Genuine escalation
-
-STEP 4 — choose strategy:
-Delay / Probe / Trade / Pressure / Corner / Exit preparation
-
-STEP 5 — generate practical sentences the buyer should say next.
-Use short natural business language.
-
-STEP 6 — define concession boundary and risk control.
-
-Output format exactly:
-
-NEGOTIATION MODE:
-POSITION:
-SUPPLIER INTENT:
-NEXT MOVE:
-SAY THIS:
-AVOID THIS:
-CONCESSION LIMIT:
-ESCALATION PLAN:
-
-Be concise and practical.`;
+import { SYSTEM_PROMPT } from './config';
 
 export async function getNegotiationGuidance(data: any) {
     const apiKey = process.env.DEEPSEEK_API_KEY;
 
-    const userPrompt = `NEGOTIATION DATA:
-- Item Name: ${data.itemName || 'N/A'}
-- Supplier Name: ${data.supplierName || 'N/A'}
+    // Pre-calculations for industrial maturity
+    const lastPrice = parseFloat(data.lastPrice) || 0;
+    const currentQuote = parseFloat(data.currentQuote) || 0;
+    const targetPrice = parseFloat(data.targetPrice) || 0;
+    const annualQty = parseFloat(data.annualQuantity?.replace(/,/g, '')) || 0;
 
-PRICE SITUATION:
-- Last Purchase Price: ${data.lastPrice}
-- Current Quote: ${data.currentQuote}
-- Target Price: ${data.targetPrice}
-- Annual Quantity: ${data.annualQuantity}
+    const priceIncrease = lastPrice > 0 ? ((currentQuote - lastPrice) / lastPrice) * 100 : 0;
+    const gapToTarget = currentQuote > 0 ? ((currentQuote - targetPrice) / currentQuote) * 100 : 0;
+    const annualImpact = (currentQuote - lastPrice) * annualQty;
+
+    const userPrompt = `INDUSTRIAL NEGOTIATION DATA:
+- Item: ${data.itemName || 'N/A'}
+- Supplier: ${data.supplierName || 'N/A'}
+
+--- FINANCIAL DASHBOARD ---
+- Last Price: ${lastPrice}
+- Current Quote: ${currentQuote} (${priceIncrease.toFixed(2)}% change)
+- Target Price: ${targetPrice} (${gapToTarget.toFixed(2)}% gap)
+- Annual Quantity: ${annualQty}
+- Projected Annual Cost Impact: ${annualImpact.toFixed(2)}
 - Vendor Cost Knowledge: ${data.costKnowledge}
 - RM Trend: ${data.rmTrend}
 
-SUPPLY PRESSURE:
+--- SUPPLY RISK & LEVERAGE ---
 - Current Stock: ${data.stock}
 - Line Stoppage Risk: ${data.stoppageRisk}
-- Alternate Approval: ${data.alternateTime}
+- Alternate Approval Time: ${data.alternateTime}
 - Tool Ownership: ${data.tooling}
-
-VENDOR STRENGTH:
-- Other Suppliers: ${data.otherSuppliers}
-- Vendor Load: ${data.vendorLoad}
+- Market Competition: ${data.otherSuppliers}
+- Vendor Capacity Load: ${data.vendorLoad}
 - Payment Terms: ${data.paymentTerms}
 
-VENDOR BEHAVIOR:
+--- BEHAVIORAL SIGNALS ---
 - Response Speed: ${data.responseSpeed}
-- Reason for Increase: ${data.increaseReason}
-- Attitude: ${data.attitude}
-- Immediate Confirmation Ask: ${data.immediateAsk}
+- Declared Reason for Increase: ${data.increaseReason}
+- Vendor Attitude: ${data.attitude}
+- Pressure Level: ${data.immediateAsk}
 
-SOURCING CONSTRAINT:
-- Company Fixed on Vendor: ${data.fixedOnVendor}
-- Why Fixed: ${data.whyFixed}
+--- INTERNAL CONSTRAINTS ---
+- Sourcing Freedom: ${data.fixedOnVendor} (Reason: ${data.whyFixed})
 - Quantity Flexibility: ${data.qtyFlexibility}
-- Spec Relaxation: ${data.specRelaxation}
-- Internal Support: ${data.internalSupport}
-`;
+- Specification Relaxation: ${data.specRelaxation}
+- Internal Stakeholder Support: ${data.internalSupport}
+
+Please analyze this data and provide a professional procurement strategy.`;
 
     const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
         method: 'POST',
@@ -87,10 +58,10 @@ SOURCING CONSTRAINT:
         body: JSON.stringify({
             model: 'deepseek-chat',
             messages: [
-                { role: 'system', content: systemPrompt },
+                { role: 'system', content: SYSTEM_PROMPT },
                 { role: 'user', content: userPrompt }
             ],
-            temperature: 0.2
+            temperature: 0.15
         })
     });
 
