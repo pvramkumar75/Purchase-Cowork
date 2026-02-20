@@ -10,7 +10,7 @@ interface FormData {
 }
 
 const initialForm: FormData = FORM_STEPS.reduce((acc, step) => {
-  acc[step.key] = step.type === 'multi-select' ? (step.options?.[0] ? [step.options[0]] : []) : (step.options?.[0] || '');
+  acc[step.key] = step.type === 'multi-select' ? [] : (step.options?.[0] || '');
   return acc;
 }, {} as FormData);
 
@@ -28,14 +28,14 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [showGlossary, setShowGlossary] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('dealpilot_history');
     if (saved) {
-      try {
-        setHistory(JSON.parse(saved));
-      } catch (e) { }
+      try { setHistory(JSON.parse(saved)); } catch (e) { }
     }
   }, []);
 
@@ -59,11 +59,9 @@ export default function Home() {
     const lastPrice = parseFloat(formData.lastPrice) || 0;
     const currentQuote = parseFloat(formData.currentQuote) || 0;
     const annualQty = parseFloat(formData.annualQuantity?.toString().replace(/,/g, '')) || 0;
-
     const diff = currentQuote - lastPrice;
     const pctChange = lastPrice > 0 ? (diff / lastPrice) * 100 : 0;
     const annualImpact = diff * annualQty;
-
     return { diff, pctChange, annualImpact };
   };
 
@@ -100,46 +98,61 @@ export default function Home() {
         localStorage.setItem('dealpilot_history', JSON.stringify(updatedHistory));
       }
     } catch (err) {
-      setError('Failed to connect to the server');
+      setError('Failed to connect to the server. Please try again.');
     } finally {
       setLoading(false);
       setTimeout(() => {
         document.getElementById('result-section')?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
+      }, 150);
     }
   };
 
   const downloadPDF = async () => {
     if (!resultRef.current) return;
-    const canvas = await html2canvas(resultRef.current, { backgroundColor: '#0d1117', scale: 2 });
+    const canvas = await html2canvas(resultRef.current, { backgroundColor: '#0a0e14', scale: 2 });
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
     pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    pdf.save(`DealPilot_Report_${formData.itemName || 'Negotiation'}.pdf`);
+    pdf.save(`DealPilot_Strategy_${formData.itemName || 'Report'}.pdf`);
   };
 
-  // Group steps by category
-  const renderMaturedContent = (text: string) => {
-    // Remove all double asterisks (markdown bold) and clean up
+  const extractEmailFromResult = (text: string): string | null => {
+    const emailMatch = text.match(/Subject:[\s\S]*?(?=###|$)/);
+    if (emailMatch) return emailMatch[0].replace(/\*\*/g, '').trim();
+    return null;
+  };
+
+  const copyEmail = () => {
+    if (!result) return;
+    const email = extractEmailFromResult(result);
+    if (email) {
+      navigator.clipboard.writeText(email);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    }
+  };
+
+  const renderContent = (text: string) => {
     const cleanText = text.replace(/\*\*/g, '');
-
     return cleanText.split('\n').map((line, i) => {
-      const trimmedLine = line.trim();
-      if (!trimmedLine) return <div key={i} style={{ height: '0.5rem' }} />;
+      const t = line.trim();
+      if (!t) return <div key={i} style={{ height: '0.4rem' }} />;
 
-      // Handle professional bullet points
-      if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ')) {
-        const [label, ...content] = trimmedLine.substring(2).split(':');
+      // Bullet points with labels
+      if (t.startsWith('- ') || t.startsWith('* ')) {
+        const parts = t.substring(2).split(':');
+        const label = parts[0];
+        const content = parts.slice(1).join(':');
         return (
           <div key={i} style={{ display: 'flex', marginBottom: '0.5rem', paddingLeft: '0.5rem' }}>
-            <span style={{ color: 'var(--accent-color)', marginRight: '0.75rem' }}>•</span>
+            <span style={{ color: 'var(--accent-color)', marginRight: '0.6rem', flexShrink: 0 }}>•</span>
             <div>
-              {content.length > 0 ? (
+              {content ? (
                 <>
-                  <span style={{ fontWeight: '600', color: '#f0f6fc' }}>{label}:</span>
-                  <span style={{ color: 'var(--text-main)' }}> {content.join(':')}</span>
+                  <span style={{ fontWeight: '600', color: 'var(--text-bright)' }}>{label}:</span>
+                  <span style={{ color: 'var(--text-main)' }}>{content}</span>
                 </>
               ) : (
                 <span style={{ color: 'var(--text-main)' }}>{label}</span>
@@ -149,113 +162,141 @@ export default function Home() {
         );
       }
 
-      // Handle Script/Quote sections
-      if (trimmedLine.startsWith('Prompt:') || trimmedLine.startsWith('Resistance Handling:')) {
-        const [label, ...content] = trimmedLine.split(':');
+      // Numbered steps
+      if (/^\d+\./.test(t)) {
+        const parts = t.split(':');
+        const label = parts[0];
+        const content = parts.slice(1).join(':');
         return (
-          <div key={i} className="script-box" style={{ background: 'rgba(88, 166, 255, 0.05)', padding: '1rem', borderLeft: '3px solid var(--accent-color)', marginBottom: '1rem', borderRadius: '4px' }}>
-            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--accent-color)', marginBottom: '0.5rem', fontWeight: 'bold' }}>{label}</div>
-            <div style={{ fontStyle: 'italic', color: 'var(--text-main)' }}>"{content.join(':').trim()}"</div>
+          <div key={i} style={{ display: 'flex', marginBottom: '0.6rem', paddingLeft: '0.5rem' }}>
+            <span style={{ color: 'var(--accent-color)', marginRight: '0.6rem', fontWeight: '700', flexShrink: 0 }}>{label.match(/^\d+/)?.[0]}.</span>
+            <div>
+              <span style={{ fontWeight: '600', color: 'var(--text-bright)' }}>{label.replace(/^\d+\.\s*/, '')}:</span>
+              <span style={{ color: 'var(--text-main)' }}>{content}</span>
+            </div>
           </div>
         );
       }
 
-      // Handle Email sections
-      if (trimmedLine.startsWith('Subject:') || trimmedLine.startsWith('Dear') || trimmedLine.startsWith('Best regards')) {
-        return (
-          <div key={i} className="email-draft-line" style={{ color: 'var(--text-main)', fontFamily: 'monospace', fontSize: '0.9rem' }}>
-            {trimmedLine}
-          </div>
-        );
+      // Email lines
+      if (t.startsWith('Subject:') || t.startsWith('Dear') || t.startsWith('Best regards') || t.startsWith('Looking forward')) {
+        return <div key={i} className="email-line" style={{ color: 'var(--text-main)', marginBottom: '0.3rem' }}>{t}</div>;
       }
 
-      return <div key={i} style={{ marginBottom: '0.75rem', color: 'var(--text-main)' }}>{trimmedLine}</div>;
+      return <div key={i} style={{ marginBottom: '0.6rem', color: 'var(--text-main)' }}>{t}</div>;
     });
   };
 
-  const categories = Array.from(new Set(FORM_STEPS.map(s => s.category)));
+  const categories = Array.from(new Set(FORM_STEPS.filter(s => !s.condition || s.condition(formData)).map(s => s.category)));
   const metrics = calculateMetrics();
 
   return (
     <main className="container">
+      {/* ─── HEADER ─── */}
       <header>
         <div className="logo-container">
-          <div className="logo-icon" style={{ borderRadius: '50%', background: 'linear-gradient(135deg, #58a6ff 0%, #1f6feb 100%)' }}>DP</div>
+          <div className="logo-icon">DP</div>
           <div>
-            <h1 style={{ fontSize: '1.25rem', letterSpacing: '0.05rem', fontWeight: '700' }}>DEALPILOT <span style={{ color: 'var(--accent-color)', fontWeight: '300' }}>INDUSTRIAL</span></h1>
-            <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1rem' }}>Sourcing Authority • v1.1.0</p>
+            <h1 style={{ fontSize: '1.2rem', letterSpacing: '0.04rem' }}>DEALPILOT <span style={{ color: 'var(--accent-color)', fontWeight: '400' }}>INDUSTRIAL</span></h1>
+            <p style={{ fontSize: '0.62rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1rem' }}>Procurement Strategy Engine • v1.2.0</p>
           </div>
         </div>
-        <button className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '0.5rem 1rem' }} onClick={() => setShowHistory(!showHistory)}>
-          {showHistory ? 'ACTIVE WORKSPACE' : 'STRATEGY ARCHIVES'}
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button className="btn btn-secondary" style={{ fontSize: '0.7rem', padding: '0.4rem 0.8rem' }} onClick={() => setShowGlossary(!showGlossary)}>
+            {showGlossary ? '✕ CLOSE' : '📖 GLOSSARY'}
+          </button>
+          <button className="btn btn-secondary" style={{ fontSize: '0.7rem', padding: '0.4rem 0.8rem' }} onClick={() => setShowHistory(!showHistory)}>
+            {showHistory ? '← BACK' : '📁 HISTORY'}
+          </button>
+        </div>
       </header>
 
-      {!showHistory && (
-        <div className="card fade-in" style={{ background: 'rgba(88, 166, 255, 0.05)', border: '1px solid var(--accent-color)', marginBottom: '2rem' }}>
-          <h2 className="section-title" style={{ color: 'var(--accent-color)', fontSize: '0.9rem' }}>💡 PROCUREMENT KNOWLEDGE HUB</h2>
-          <div className="grid" style={{ gridTemplateColumns: '1fr 1fr 1fr', gap: '1.5rem' }}>
-            <div>
-              <label style={{ color: 'var(--accent-color)', fontWeight: 'bold' }}>POWER BALANCE</label>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{DEFINITIONS.powerBalance}</p>
+      {/* ─── GLOSSARY ─── */}
+      {showGlossary && (
+        <div className="card fade-in" style={{ border: '1px solid rgba(96, 165, 250, 0.2)', background: 'rgba(96, 165, 250, 0.03)' }}>
+          <h2 className="section-title">📖 Procurement Terms — Simple Explanations</h2>
+          <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            {Object.entries(DEFINITIONS).map(([key, value]) => (
+              <div key={key} className="knowledge-card">
+                <h4>{key.replace(/([A-Z])/g, ' $1').toUpperCase()}</h4>
+                <p>{value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ─── KNOWLEDGE HUB (compact) ─── */}
+      {!showHistory && !showGlossary && (
+        <div className="card fade-in" style={{ border: '1px solid rgba(96, 165, 250, 0.15)', background: 'rgba(96, 165, 250, 0.03)' }}>
+          <h2 className="section-title" style={{ fontSize: '0.7rem' }}>💡 QUICK REFERENCE</h2>
+          <div className="grid knowledge-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+            <div className="knowledge-card">
+              <h4>POWER BALANCE</h4>
+              <p>{DEFINITIONS.powerBalance}</p>
             </div>
-            <div>
-              <label style={{ color: 'var(--accent-color)', fontWeight: 'bold' }}>BATNA</label>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{DEFINITIONS.batna}</p>
+            <div className="knowledge-card">
+              <h4>BATNA (Plan B)</h4>
+              <p>{DEFINITIONS.batna}</p>
             </div>
-            <div>
-              <label style={{ color: 'var(--accent-color)', fontWeight: 'bold' }}>ZOPA</label>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{DEFINITIONS.zopa}</p>
+            <div className="knowledge-card">
+              <h4>ZOPA (Deal Zone)</h4>
+              <p>{DEFINITIONS.zopa}</p>
             </div>
           </div>
         </div>
       )}
 
+      {/* ─── LIVE ANALYTICS ─── */}
       {!showHistory && (
-        <div className="card fade-in" style={{ background: 'linear-gradient(180deg, #1c2128 0%, #161b22 100%)', border: '1px solid var(--accent-secondary)' }}>
-          <h2 className="section-title" style={{ color: 'var(--accent-secondary)' }}>Live Analytics</h2>
+        <div className="card fade-in">
+          <h2 className="section-title" style={{ fontSize: '0.7rem' }}>📊 LIVE PRICE ANALYSIS</h2>
           <div className="grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
             <div className="metric-box">
-              <label>Price Delta</label>
-              <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: metrics.diff > 0 ? 'var(--danger-color)' : 'var(--success-color)' }}>
+              <label>Price Difference</label>
+              <div style={{ fontSize: '1.2rem', fontWeight: '700', color: metrics.diff > 0 ? 'var(--danger-color)' : 'var(--success-color)' }}>
                 {metrics.diff > 0 ? '+' : ''}{metrics.diff.toLocaleString()}
               </div>
             </div>
             <div className="metric-box">
               <label>% Change</label>
-              <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: metrics.pctChange > 0 ? 'var(--danger-color)' : 'var(--success-color)' }}>
-                {metrics.pctChange > 0 ? '+' : ''}{metrics.pctChange.toFixed(2)}%
+              <div style={{ fontSize: '1.2rem', fontWeight: '700', color: metrics.pctChange > 0 ? 'var(--danger-color)' : 'var(--success-color)' }}>
+                {metrics.pctChange > 0 ? '+' : ''}{metrics.pctChange.toFixed(1)}%
               </div>
             </div>
             <div className="metric-box">
-              <label>Annual Impact</label>
-              <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: metrics.annualImpact > 0 ? 'var(--danger-color)' : 'var(--success-color)' }}>
-                {metrics.annualImpact > 0 ? '−' : '+'}{Math.abs(metrics.annualImpact).toLocaleString()}
+              <label>Annual Cost Impact</label>
+              <div style={{ fontSize: '1.2rem', fontWeight: '700', color: metrics.annualImpact > 0 ? 'var(--danger-color)' : 'var(--success-color)' }}>
+                {metrics.annualImpact > 0 ? '+' : ''}{Math.abs(metrics.annualImpact).toLocaleString()}
               </div>
             </div>
           </div>
         </div>
       )}
 
+      {/* ─── HISTORY ─── */}
       {showHistory ? (
         <div className="card fade-in">
-          <h2 className="section-title">Negotiation Archives</h2>
-          {history.length === 0 ? <p style={{ color: 'var(--text-muted)' }}>No records found.</p> : (
-            <div className="history-list">
+          <h2 className="section-title">📁 Past Negotiations</h2>
+          {history.length === 0 ? <p style={{ color: 'var(--text-muted)', padding: '1rem' }}>No records yet. Complete a negotiation to see it here.</p> : (
+            <div>
               {history.map(item => (
                 <div key={item.id} className="history-item" onClick={() => { setFormData(item.data); setResult(item.result); setShowHistory(false); }}>
-                  <div style={{ fontWeight: 'bold' }}>{item.data.itemName} | {item.data.supplierName}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{item.date}</div>
+                  <div style={{ fontWeight: '600', color: 'var(--text-bright)' }}>{item.data.itemName || 'Unnamed'} → {item.data.supplierName || 'Unknown'}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>{item.date} • {item.data.purchaseCategory || ''}</div>
                 </div>
               ))}
             </div>
           )}
         </div>
+
       ) : (
+
+        /* ─── INPUT FORM ─── */
         <div className="fade-in">
           {categories.map(cat => (
-            <div key={cat} className="card">
-              <h2 className="section-title">{cat} Parameters</h2>
+            <div key={cat} className="card slide-up">
+              <h2 className="section-title">{cat}</h2>
               <div className="grid">
                 {FORM_STEPS.filter(s => s.category === cat && (!s.condition || s.condition(formData))).map(step => (
                   <div key={step.key} className="form-group">
@@ -274,7 +315,7 @@ export default function Home() {
                         ))}
                       </div>
                     ) : (
-                      <input type={step.type} name={step.key} value={formData[step.key]} onChange={handleChange} placeholder={step.label} />
+                      <input type={step.type} name={step.key} value={formData[step.key]} onChange={handleChange} placeholder={`Enter ${step.label.toLowerCase()}`} />
                     )}
                   </div>
                 ))}
@@ -282,58 +323,75 @@ export default function Home() {
             </div>
           ))}
 
-          <button className="btn btn-primary" onClick={handleNegotiate} disabled={loading || !formData.currentQuote} style={{ height: '3.5rem', fontSize: '1.1rem', marginBottom: '2rem' }}>
-            {loading ? <><span className="spinner"></span> ANALYZING MARKET DATA...</> : 'GENERATE STRATEGIC REPORT'}
+          <button
+            className="btn btn-primary"
+            onClick={handleNegotiate}
+            disabled={loading || !formData.currentQuote}
+            style={{ height: '3.25rem', fontSize: '1rem', marginBottom: '2rem', borderRadius: '10px' }}
+          >
+            {loading ? <><span className="spinner"></span> ANALYZING YOUR SITUATION...</> : '🚀 GENERATE NEGOTIATION STRATEGY'}
           </button>
         </div>
       )}
 
-      {error && <div className="card fade-in" style={{ borderColor: 'var(--danger-color)', color: 'var(--danger-color)' }}>{error}</div>}
+      {/* ─── ERROR ─── */}
+      {error && <div className="card fade-in" style={{ borderColor: 'var(--danger-color)', color: 'var(--danger-color)', background: 'var(--danger-bg)' }}>{error}</div>}
 
+      {/* ─── RESULTS ─── */}
       {result && !showHistory && (
-        <div className="fade-in" id="result-section">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>STRATEGIC ADVISORY</h2>
-            <button className="btn btn-download" onClick={downloadPDF}>DOWNLOAD PDF REPORT</button>
+        <div className="slide-up" id="result-section">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: '700' }}>📋 YOUR NEGOTIATION STRATEGY</h2>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              {extractEmailFromResult(result) && (
+                <button className="btn btn-copy" onClick={copyEmail}>
+                  {copySuccess ? '✓ COPIED!' : '📋 COPY EMAIL'}
+                </button>
+              )}
+              <button className="btn btn-download" style={{ fontSize: '0.75rem', padding: '0.4rem 1rem' }} onClick={downloadPDF}>DOWNLOAD PDF</button>
+            </div>
           </div>
 
-          <div className="card" ref={resultRef} style={{ padding: '2rem', border: '1px solid var(--accent-color)' }}>
-            <div style={{ borderLeft: '4px solid var(--accent-color)', paddingLeft: '1.5rem', marginBottom: '2rem' }}>
-              <h3 style={{ fontSize: '1.5rem', color: 'var(--accent-color)' }}>{formData.itemName}</h3>
-              <p style={{ color: 'var(--text-muted)' }}>Supplier: {formData.supplierName} | Date: {new Date().toLocaleDateString()}</p>
+          <div className="card" ref={resultRef} style={{ padding: '2rem', border: '1px solid rgba(96, 165, 250, 0.2)' }}>
+            {/* Report Header */}
+            <div style={{ borderLeft: '4px solid var(--accent-color)', paddingLeft: '1.25rem', marginBottom: '2rem' }}>
+              <h3 style={{ fontSize: '1.3rem', color: 'var(--accent-color)', marginBottom: '0.25rem' }}>{formData.itemName || 'Untitled'}</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                Supplier: {formData.supplierName || '—'} • Category: {formData.purchaseCategory || '—'} • {new Date().toLocaleDateString()}
+              </p>
             </div>
 
-            <div className="markdown-content" style={{ fontSize: '1rem', lineHeight: '1.6', color: 'var(--text-main)' }}>
-              {result.split('###').map((section, i) => i === 0 ? null : (
-                <div key={i} style={{ marginBottom: '2rem' }}>
-                  <h4 style={{ color: 'var(--accent-color)', textTransform: 'uppercase', fontSize: '0.8rem', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', letterSpacing: '0.05rem' }}>
-                    {section.split('\n')[0].trim()}
-                  </h4>
-                  <div style={{ paddingLeft: '0.5rem', position: 'relative' }}>
-                    {section.trim().includes('DRAFT NEGOTIATION EMAIL') && (
-                      <button
-                        className="btn btn-secondary"
-                        style={{ position: 'absolute', top: '-40px', right: '0', fontSize: '0.65rem', padding: '0.25rem 0.5rem' }}
-                        onClick={() => {
-                          const emailText = section.split('\n').slice(1).join('\n').replace(/\*\*/g, '').trim();
-                          navigator.clipboard.writeText(emailText);
-                          alert('Email draft copied to clipboard!');
-                        }}
-                      >
-                        COPY EMAIL
-                      </button>
+            {/* Report Body */}
+            <div style={{ fontSize: '0.92rem', lineHeight: '1.65', color: 'var(--text-main)' }}>
+              {result.split('###').map((section, i) => {
+                if (i === 0) return null;
+                const lines = section.split('\n');
+                const title = lines[0].trim();
+                const body = lines.slice(1).join('\n').trim();
+                const isEmail = title.includes('EMAIL');
+
+                return (
+                  <div key={i} className="report-section">
+                    <h4 className="report-section-title">{title}</h4>
+                    {isEmail ? (
+                      <div className="email-block">
+                        {renderContent(body)}
+                      </div>
+                    ) : (
+                      <div style={{ paddingLeft: '0.25rem' }}>
+                        {renderContent(body)}
+                      </div>
                     )}
-                    {renderMaturedContent(section.split('\n').slice(1).join('\n').trim())}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
       )}
 
-      <footer style={{ marginTop: '4rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.75rem', paddingBottom: '2rem', borderTop: '1px solid var(--border-color)', paddingTop: '2rem' }}>
-        DEALPILOT INDUSTRIAL v2.0 • STRATEGIC SOURCING ADVISORY • HIGH CONFIDENTIALITY
+      <footer>
+        DEALPILOT INDUSTRIAL v1.2.0 • PROCUREMENT STRATEGY ENGINE • CONFIDENTIAL
       </footer>
     </main>
   );

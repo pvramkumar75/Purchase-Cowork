@@ -7,10 +7,16 @@ export interface FormStep {
     condition?: (data: any) => boolean;
 }
 
-export const DEFINITIONS = {
-    powerBalance: "Who has more 'say' in the price? If there are many suppliers, the Buyer wins. If only one supplier has the item, the Seller wins.",
-    batna: "Your 'Plan B'. If this supplier says No, what is your next best option? (e.g., buying a different material, using a back-up vendor, or delaying the project).",
-    zopa: "The 'Deal Zone'. It is the price range between the highest you will pay and the lowest the seller will accept."
+export const DEFINITIONS: Record<string, string> = {
+    powerBalance: "Who has more control in this deal? If there are many suppliers who can deliver this item, the Buyer has the advantage. If only one supplier can provide it, the Seller has the advantage.",
+    batna: "Your 'Plan B'. If this deal falls through or the supplier says No, what is your next best option? For example: buying a different material, using a backup vendor, or reworking the specification.",
+    zopa: "The 'Deal Zone'. This is the price range where both you and the supplier can agree. It falls between the most you are willing to pay and the least the supplier is willing to accept.",
+    kraljic: "A way to classify what you are buying into 4 groups: Strategic (high risk, high value), Bottleneck (high risk, low value), Leverage (low risk, high value), and Non-Critical (low risk, low value). This helps decide how to approach the negotiation.",
+    anchor: "The first price or offer you put on the table. It sets the starting point for the negotiation. A smart anchor is usually close to your target price.",
+    flinch: "Your visible reaction to the supplier's quote. It signals that their price is too high, even before you say a word.",
+    wedge: "A non-price item you can trade. For example: longer payment terms, forecast visibility, or volume commitments. It gives the supplier something they want without you giving up on price.",
+    tco: "Total Cost of Ownership. This means looking beyond just the unit price. It includes shipping, quality costs, tooling, payment terms, and risk of supply failure.",
+    lpp: "Last Purchase Price. The price you paid the last time you bought this item. It is the most important benchmark for any negotiation."
 };
 
 export const PURCHASE_CATEGORIES = [
@@ -30,7 +36,7 @@ export const PURCHASE_CATEGORIES = [
 export const FORM_STEPS: FormStep[] = [
     { key: 'purchaseCategory', label: 'Purchase Category', type: 'select', options: PURCHASE_CATEGORIES, category: 'General' },
 
-    // Category Specific Questions
+    // Category Specific
     { key: 'polymerGrade', label: 'Polymer Grade / Type', type: 'text', category: 'General', condition: (d) => d.purchaseCategory === 'Polymers' },
     { key: 'lmeRate', label: 'Current LME / Market Rate for Copper', type: 'number', category: 'Commercial', condition: (d) => d.purchaseCategory?.includes('Copper') },
     { key: 'efficiencyClass', label: 'Efficiency / Frame Class', type: 'text', category: 'General', condition: (d) => d.purchaseCategory === 'Motors' },
@@ -38,82 +44,91 @@ export const FORM_STEPS: FormStep[] = [
     { key: 'itemName', label: 'Item / Material Name', type: 'text', category: 'General' },
     { key: 'supplierName', label: 'Supplier Name', type: 'text', category: 'General' },
 
-    { key: 'lastPrice', label: 'Benchmark Price (Last Paid / Market Rate)', type: 'number', category: 'Commercial' },
-    { key: 'currentQuote', label: 'Vendor Current Quote', type: 'number', category: 'Commercial' },
-    { key: 'targetPrice', label: 'Target / Baseline Price', type: 'number', category: 'Commercial' },
-    { key: 'annualQuantity', label: 'Annual Usage / Consumption Volume', type: 'text', category: 'Commercial' },
-    { key: 'costKnowledge', label: 'Should-Cost Knowledge (Our understanding of their cost)', type: 'select', options: ['High Level', 'Detailed Breakdown', 'No Visibility'], category: 'Commercial' },
-    { key: 'rmTrend', label: 'Market / Input Cost Trend (Commodity/Labour Trends)', type: 'select', options: ['Decreasing', 'Stable', 'Increasing'], category: 'Commercial' },
+    { key: 'lastPrice', label: 'Last Paid Price (Benchmark)', type: 'number', category: 'Commercial' },
+    { key: 'currentQuote', label: 'Supplier Current Quote', type: 'number', category: 'Commercial' },
+    { key: 'targetPrice', label: 'Your Target Price', type: 'number', category: 'Commercial' },
+    { key: 'annualQuantity', label: 'Annual Usage Volume', type: 'text', category: 'Commercial' },
+    { key: 'costKnowledge', label: 'How well do you know the supplier\'s cost?', type: 'select', options: ['Rough Idea', 'Detailed Breakdown', 'No Idea'], category: 'Commercial' },
+    { key: 'rmTrend', label: 'Market Price Trend (Is raw material going up or down?)', type: 'select', options: ['Going Down', 'Stable', 'Going Up'], category: 'Commercial' },
 
-    { key: 'stock', label: 'Supply Coverage (Inventory / Lead-time Buffer)', type: 'select', options: ['Critical (<3 days)', 'Low (1 week)', 'Moderate (2-4 weeks)', 'Secure (>1 month)'], category: 'Supply Risk' },
-    { key: 'stoppageRisk', label: 'Business Interruption Risk (Impact of non-delivery)', type: 'select', options: ['Total Stoppage', 'Partial Impact', 'Delayed Project', 'Limited Risk'], category: 'Supply Risk' },
-    { key: 'alternateTime', label: 'Time to Switch Source (Switching Speed)', type: 'select', options: ['Switchable Today', '2 weeks (Fast)', '2-3 months (Medium)', '6 months+ (Locked)'], category: 'Supply Risk' },
-    { key: 'tooling', label: 'Ownership of Specific Assets (IP/Moulds/Software/Hardware)', type: 'select', options: ['Company Owned', 'Vender Owned', 'Jointly Owned', 'No Specific Assets'], category: 'Supply Risk' },
+    { key: 'stock', label: 'How much stock do you have right now?', type: 'select', options: ['Very Low (< 3 days)', 'Low (1 week)', 'Okay (2-4 weeks)', 'Comfortable (> 1 month)'], category: 'Supply Risk' },
+    { key: 'stoppageRisk', label: 'What happens if the supplier does not deliver?', type: 'select', options: ['Production Stops', 'Partial Slowdown', 'Project Delayed', 'Not Much Impact'], category: 'Supply Risk' },
+    { key: 'alternateTime', label: 'How fast can you switch to another supplier?', type: 'select', options: ['Can switch today', 'Within 2 weeks', '2-3 months', '6 months or more'], category: 'Supply Risk' },
+    { key: 'tooling', label: 'Who owns the tooling / moulds / IP?', type: 'select', options: ['We Own It', 'Supplier Owns It', 'Jointly Owned', 'No Tooling Involved'], category: 'Supply Risk' },
 
-    { key: 'otherSuppliers', label: 'Market Alternates (Qualified Competitors)', type: 'select', options: ['Sole Source', '2-3 Qualified', 'Many Qualified', 'Highly Monopolistic'], category: 'Leverage' },
-    { key: 'vendorLoad', label: 'Supplier Capacity Load (How busy are they?)', type: 'select', options: ['Near Capacity', 'Normal Operation', 'Seeking Volume (Hungry)'], category: 'Leverage' },
-    { key: 'paymentTerms', label: 'Commercial Terms (Payment Days/Credit)', type: 'select', options: ['Pre-payment', 'Short Terms (<30)', 'Normal Terms (30-60)', 'Extended Terms (>60)'], category: 'Leverage' },
+    { key: 'otherSuppliers', label: 'How many other suppliers can supply this?', type: 'select', options: ['Only This One', '2-3 Available', 'Many Available'], category: 'Leverage' },
+    { key: 'vendorLoad', label: 'Is the supplier busy or looking for orders?', type: 'select', options: ['Very Busy', 'Normal Workload', 'Looking for Business'], category: 'Leverage' },
+    { key: 'paymentTerms', label: 'What payment terms are you offering?', type: 'select', options: ['Advance Payment', 'Within 30 Days', '30-60 Days', 'More Than 60 Days'], category: 'Leverage' },
 
-    { key: 'responseSpeed', label: 'Supplier Engagement Speed', type: 'select', options: ['Avoiding / Strategic Delay', 'Slow / Bureaucratic', 'Responsive', 'Very Proactive'], category: 'Behavior' },
-    { key: 'increaseReason', label: 'Stated Reason for Increase', type: 'select', options: ['Material / Commodity', 'Labour / Overheads', 'Energy / Logistics', 'Market Shortage', 'No Clear Reason'], category: 'Behavior' },
-    { key: 'attitude', label: 'Supplier Communication Style', type: 'select', options: ['Defensive', 'Aggressive', 'Partnership Driven', 'Bluff feel'], category: 'Behavior' },
-    { key: 'immediateAsk', label: 'Level of Pressure for Immediate Decision', type: 'select', options: ['Hard Ultimatum', 'Mild Pressure', 'Standard Quote Time'], category: 'Behavior' },
+    { key: 'responseSpeed', label: 'How quickly is the supplier responding?', type: 'select', options: ['Avoiding Us', 'Very Slow', 'Normal', 'Very Quick'], category: 'Behavior' },
+    { key: 'increaseReason', label: 'What reason did they give for the price increase?', type: 'select', options: ['Raw Material Cost', 'Labour / Overheads', 'Energy / Transport', 'High Demand', 'No Clear Reason'], category: 'Behavior' },
+    { key: 'attitude', label: 'How is the supplier behaving?', type: 'select', options: ['Defensive', 'Aggressive', 'Cooperative', 'Feels Like a Bluff'], category: 'Behavior' },
+    { key: 'immediateAsk', label: 'Are they pressuring you for a quick decision?', type: 'select', options: ['Yes, Hard Pressure', 'Mild Pressure', 'No, Normal Timeline'], category: 'Behavior' },
 
-    { key: 'fixedOnVendor', label: 'Technical Lock-in Level', type: 'select', options: ['Totally Locked', 'Prefer this Source', 'Open to Change'], category: 'Constraints' },
-    { key: 'whyFixed', label: 'Primary Constraint (Why are we with them?)', type: 'multi-select', options: ['Proprietary IP', 'Customer Specified', 'Past Performance', 'Specialized Geo', 'Framework Agreement'], category: 'Constraints' },
-    { key: 'qtyFlexibility', label: 'Our Volume Flexibility (Can we move volume?)', type: 'select', options: ['Strict (No)', 'Partial Shift', 'Full Flexibility (Yes)'], category: 'Constraints' },
-    { key: 'specRelaxation', label: 'Specification Flexibility (Can we change requirements?)', type: 'select', options: ['No Flexibility', 'Minor Changes', 'Major Re-spec Possible'], category: 'Constraints' },
-    { key: 'internalSupport', label: 'Internal Stakeholder Alignment', type: 'select', options: ['Strong Support to Change', 'Neutral / Cautious', 'Resistant to Change'], category: 'Constraints' }
+    { key: 'fixedOnVendor', label: 'Are you locked into this supplier?', type: 'select', options: ['Completely Locked', 'Prefer Them But Can Change', 'Free to Choose'], category: 'Constraints' },
+    { key: 'whyFixed', label: 'Why are you with this supplier? (Pick all that apply)', type: 'multi-select', options: ['Their Proprietary technology', 'Customer Requirement', 'Good Past Performance', 'Only Available Locally', 'Long-term Agreement'], category: 'Constraints' },
+    { key: 'qtyFlexibility', label: 'Can you shift volume to another supplier?', type: 'select', options: ['No', 'Partially', 'Yes, Fully'], category: 'Constraints' },
+    { key: 'specRelaxation', label: 'Can you change the specification to allow other suppliers?', type: 'select', options: ['No', 'Small Changes Possible', 'Major Changes Possible'], category: 'Constraints' },
+    { key: 'internalSupport', label: 'Does your management support changing suppliers?', type: 'select', options: ['Yes, Strong Support', 'Neutral', 'No, They Resist Change'], category: 'Constraints' }
 ];
 
-export const SYSTEM_PROMPT = `You are a world-class Industrial Procurement Specialist (CPO Level). 
-Your output must be a clinical, high-stakes negotiation playbook. 
+export const SYSTEM_PROMPT = `You are a friendly but sharp Procurement Advisor helping industrial buyers negotiate better deals with suppliers.
 
-CORE ANALYSIS:
-1. POSITION: Kraljic (Strategic/Bottleneck/Leverage/Non-critical).
-2. POWER BALANCE: Who truly holds the cards based on lead-times, stock, and alternates.
-3. THE WEDGE: Identify what the supplier needs more than cash (e.g., capacity utilization, predictability, reference value).
+IMPORTANT RULES:
+1. Write in SIMPLE, CLEAR English that anyone can understand. Avoid jargon.
+2. When you use a special term (like BATNA, ZOPA, Kraljic, Anchor, TCO), always explain it in brackets right after using it. Example: "Your BATNA (Plan B if this deal fails) is..."  
+3. Be specific with numbers. Never say "consider a lower price" — say "offer 6,100 instead of 6,500".
+4. The draft email must be so simple that a non-English speaker can understand it.
 
-OUTPUT STRUCTURE (Industrial Standard):
+ANALYSIS APPROACH:
+1. Classification: Which Kraljic box does this item fall in? (Explain what that means for the buyer)
+2. Who has the upper hand: Buyer or Supplier? (Explain why)
+3. What does the supplier need from us that we can use as a bargaining chip?
 
-### 📊 STRATEGIC POSITIONING
-- Matrix Category: [Category]
-- Power Balance: [Balance]
-- BATNA: [Alternative plan]
-- ZOPA: [Zone of possible agreement]
+OUTPUT FORMAT:
 
-### 💡 THE CORE STRATEGY
-[Executive summary of the psychological approach. E.g., "The Reluctant Buyer" or "The Volume Anchor".]
+### 📊 WHERE YOU STAND
+- Item Type: [Kraljic category + simple explanation]
+- Who Has The Upper Hand: [Buyer / Supplier / Equal — and why in 1 line]
+- Your Plan B (BATNA): [What you can do if this deal fails]
+- Deal Zone (ZOPA): [The price range where a deal is possible]
 
-### 🎯 TACTICAL MOVES (The Playbook)
-1. THE ANCHOR: [Specific price/starting point to set the baseline]
-2. THE FLINCH: [How to react to their quote to signal a limit]
-3. THE WEDGE: [What non-price item to ask for or yield to gain leverage]
-4. THE TRADE-OFF: [E.g., Price vs Payment Terms vs Forecast Visibility]
+### 💡 YOUR GAME PLAN
+[2-3 sentences summarizing the approach in plain English. Name the tactic, e.g., "Play it cool and anchor low" or "Secure supply first, negotiate price later"]
 
-### 💬 NEGOTIATION TALK TRACKS
-- Opening Statement: [Objective, data-driven lead-in]
-- Handling Resistance: [How to bypass their "Standard Cost" or "RM Increase" excuses without confrontation]
-- The Close: [How to lock the delivery date and price together]
+### 🎯 STEP-BY-STEP MOVES
+1. Start Here (The Anchor): [Exact price to open with and why]
+2. React to Their Quote (The Flinch): [What to say or do when you hear their number]
+3. Your Bargaining Chip (The Wedge): [Non-price item to trade, e.g., payment terms, volume]
+4. The Trade-Off: [What you can give up vs. what you get in return]
 
-### 📉 FINANCIAL IMPACT & LIMITS
-- Target Price: [Target]
-- Max Ceiling: [Ceiling]
-- Trade-off Valuations: [Value of payment terms or qty shifts]
+### 💬 WHAT TO SAY
+- Opening Line: [Exactly what to say to start the conversation]
+- If They Push Back: [How to respond calmly with data]
+- Closing Line: [How to wrap up and get commitment]
 
-### 🛡️ RISK & ALTERNATIVES
-- Avoid: [Low-leverage behaviors]
-- Next Step: [The "Walk" or the "Sign"]
+### 📉 THE NUMBERS
+- Your Target Price: [Number]
+- Maximum You Should Pay: [Number — and why this is the limit]
+- Cost If You Accept Their Quote: [Annual impact in rupees/currency]
 
-### ✉️ DRAFT NEGOTIATION EMAIL
-(Please provide a ready-to-use email for the supplier in simple, polite, and precise English)
-Subject: Regarding our discussion on [Item Name] - [Supplier Name]
+### 🛡️ WATCH OUT FOR
+- Do Not: [List of mistakes to avoid]
+- If It Fails: [What to do next]
 
-Dear [Name],
+### ✉️ READY-TO-SEND EMAIL
+(Write a complete, polite, professional email in very simple English that the buyer can copy-paste and send to the supplier. Include Subject line.)
 
-[Email body summarizing the proposal, price target, and delivery requirements in simple English]
+Subject: Discussion on pricing for [Item] — [Supplier Name]
+
+Dear Sir/Madam,
+
+[Simple, clear email body: reference last price, state concern about new quote, propose a meeting or counter-offer, mention delivery expectations]
+
+Looking forward to your response.
 
 Best regards,
-[Name]
+[Buyer Name]
+[Company Name]
 
-Tone: Authoritative, clinical, focused on economic gain and relationship control. Use procurement terminology like LPP, TCO, and Rebates. The email part should be very simple and polite.`;
+Remember: Keep everything simple. A purchase engineer with 2 years of experience should be able to read this and act on it immediately.`;
