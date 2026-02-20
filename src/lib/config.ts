@@ -4,11 +4,39 @@ export interface FormStep {
     type: 'text' | 'number' | 'select' | 'multi-select';
     options?: string[];
     category: string;
+    condition?: (data: any) => boolean;
 }
 
+export const DEFINITIONS = {
+    powerBalance: "Who has more 'say' in the price? If there are many suppliers, the Buyer wins. If only one supplier has the item, the Seller wins.",
+    batna: "Your 'Plan B'. If this supplier says No, what is your next best option? (e.g., buying a different material, using a back-up vendor, or delaying the project).",
+    zopa: "The 'Deal Zone'. It is the price range between the highest you will pay and the lowest the seller will accept."
+};
+
+export const PURCHASE_CATEGORIES = [
+    "Polymers",
+    "Copper Wire",
+    "Copper Nickel Wires",
+    "General Consumables",
+    "Maintenance Items",
+    "Spares",
+    "Hardware",
+    "Switch Gear",
+    "Motors",
+    "Utility Items",
+    "Others"
+];
+
 export const FORM_STEPS: FormStep[] = [
-    { key: 'itemName', label: 'Purchase Item (Material / Component / Service)', type: 'text', category: 'General' },
-    { key: 'supplierName', label: 'Supplier / Service Provider Name', type: 'text', category: 'General' },
+    { key: 'purchaseCategory', label: 'Purchase Category', type: 'select', options: PURCHASE_CATEGORIES, category: 'General' },
+
+    // Category Specific Questions
+    { key: 'polymerGrade', label: 'Polymer Grade / Type', type: 'text', category: 'General', condition: (d) => d.purchaseCategory === 'Polymers' },
+    { key: 'lmeRate', label: 'Current LME / Market Rate for Copper', type: 'number', category: 'Commercial', condition: (d) => d.purchaseCategory?.includes('Copper') },
+    { key: 'efficiencyClass', label: 'Efficiency / Frame Class', type: 'text', category: 'General', condition: (d) => d.purchaseCategory === 'Motors' },
+
+    { key: 'itemName', label: 'Item / Material Name', type: 'text', category: 'General' },
+    { key: 'supplierName', label: 'Supplier Name', type: 'text', category: 'General' },
 
     { key: 'lastPrice', label: 'Benchmark Price (Last Paid / Market Rate)', type: 'number', category: 'Commercial' },
     { key: 'currentQuote', label: 'Vendor Current Quote', type: 'number', category: 'Commercial' },

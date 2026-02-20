@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { FORM_STEPS } from '@/lib/config';
+import { FORM_STEPS, DEFINITIONS } from '@/lib/config';
 
 interface FormData {
   [key: string]: any;
@@ -183,6 +183,26 @@ export default function Home() {
       </header>
 
       {!showHistory && (
+        <div className="card fade-in" style={{ background: 'rgba(88, 166, 255, 0.05)', border: '1px solid var(--accent-color)', marginBottom: '2rem' }}>
+          <h2 className="section-title" style={{ color: 'var(--accent-color)', fontSize: '0.9rem' }}>💡 PROCUREMENT KNOWLEDGE HUB</h2>
+          <div className="grid" style={{ gridTemplateColumns: '1fr 1fr 1fr', gap: '1.5rem' }}>
+            <div>
+              <label style={{ color: 'var(--accent-color)', fontWeight: 'bold' }}>POWER BALANCE</label>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{DEFINITIONS.powerBalance}</p>
+            </div>
+            <div>
+              <label style={{ color: 'var(--accent-color)', fontWeight: 'bold' }}>BATNA</label>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{DEFINITIONS.batna}</p>
+            </div>
+            <div>
+              <label style={{ color: 'var(--accent-color)', fontWeight: 'bold' }}>ZOPA</label>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{DEFINITIONS.zopa}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!showHistory && (
         <div className="card fade-in" style={{ background: 'linear-gradient(180deg, #1c2128 0%, #161b22 100%)', border: '1px solid var(--accent-secondary)' }}>
           <h2 className="section-title" style={{ color: 'var(--accent-secondary)' }}>Live Analytics</h2>
           <div className="grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
@@ -228,7 +248,7 @@ export default function Home() {
             <div key={cat} className="card">
               <h2 className="section-title">{cat} Parameters</h2>
               <div className="grid">
-                {FORM_STEPS.filter(s => s.category === cat).map(step => (
+                {FORM_STEPS.filter(s => s.category === cat && (!s.condition || s.condition(formData))).map(step => (
                   <div key={step.key} className="form-group">
                     <label>{step.label}</label>
                     {step.type === 'select' ? (

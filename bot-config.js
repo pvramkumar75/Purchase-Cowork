@@ -1,6 +1,19 @@
+const DEFINITIONS = {
+    powerBalance: "Who has more leverage in the deal? If many suppliers, the Buyer wins. If only one supplier, the Seller wins.",
+    batna: "Plan B: What is your next best option if this deal fails?",
+    zopa: "Deal Zone: The price range between your ceiling and their floor."
+};
+
+const PURCHASE_CATEGORIES = [
+    "Polymers", "Copper Wire", "Copper Nickel Wires", "General Consumables",
+    "Maintenance Items", "Spares", "Hardware", "Switch Gear",
+    "Motors", "Utility Items", "Others"
+];
+
 const FORM_STEPS = [
-    { key: 'itemName', label: '📦 Purchase Item (Material / Component / Service)', type: 'text', category: 'General' },
-    { key: 'supplierName', label: '🏢 Supplier / Service Provider Name', type: 'text', category: 'General' },
+    { key: 'purchaseCategory', label: '📊 Selection Category', type: 'select', options: PURCHASE_CATEGORIES },
+    { key: 'itemName', label: '📦 Item / Material Name', type: 'text' },
+    { key: 'supplierName', label: '🏢 Supplier Name', type: 'text' },
 
     { key: 'lastPrice', label: '💰 Benchmark Price (Last Paid / Market Rate)', type: 'number', category: 'Commercial' },
     { key: 'currentQuote', label: '📈 Vendor Current Quote', type: 'number', category: 'Commercial' },
@@ -48,4 +61,4 @@ OUTPUT STRUCTURE:
 
 Tone: Clinical, authoritative, focused on economic gain. Use terms like LPP, TCO, and Rebates.`;
 
-module.exports = { FORM_STEPS, SYSTEM_PROMPT };
+module.exports = { FORM_STEPS, SYSTEM_PROMPT, DEFINITIONS, PURCHASE_CATEGORIES };
