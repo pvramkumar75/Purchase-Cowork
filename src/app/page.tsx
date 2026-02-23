@@ -53,6 +53,11 @@ export default function Home() {
   const [showChat, setShowChat] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // Market Intelligence state
+  const [marketIntel, setMarketIntel] = useState<string | null>(null);
+  const [marketLoading, setMarketLoading] = useState(false);
+  const marketRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const saved = localStorage.getItem('dealpilot_history');
     if (saved) {
@@ -124,6 +129,39 @@ export default function Home() {
       setLoading(false);
       setTimeout(() => {
         document.getElementById('result-section')?.scrollIntoView({ behavior: 'smooth' });
+      }, 150);
+    }
+  };
+
+  // Market Intelligence handler
+  const handleMarketIntel = async () => {
+    if (!formData.itemName && !formData.purchaseCategory) {
+      setError('Please enter at least the Item Name and Category to get market intelligence.');
+      return;
+    }
+    setMarketLoading(true);
+    setMarketIntel(null);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/market-intel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+      if (data.error) {
+        setError(data.error);
+      } else {
+        setMarketIntel(data.result);
+      }
+    } catch (err) {
+      setError('Failed to fetch market intelligence. Please try again.');
+    } finally {
+      setMarketLoading(false);
+      setTimeout(() => {
+        document.getElementById('market-intel-section')?.scrollIntoView({ behavior: 'smooth' });
       }, 150);
     }
   };
@@ -443,14 +481,24 @@ export default function Home() {
             </div>
           ))}
 
-          <button
-            className="btn btn-primary"
-            onClick={handleNegotiate}
-            disabled={loading || !formData.currentQuote}
-            style={{ height: '3.25rem', fontSize: '1rem', marginBottom: '2rem', borderRadius: '10px' }}
-          >
-            {loading ? <><span className="spinner"></span> ANALYZING YOUR SITUATION...</> : '🚀 GENERATE NEGOTIATION STRATEGY'}
-          </button>
+          <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+            <button
+              className="btn btn-primary"
+              onClick={handleNegotiate}
+              disabled={loading || !formData.currentQuote}
+              style={{ height: '3.25rem', fontSize: '1rem', borderRadius: '10px', flex: '1 1 55%' }}
+            >
+              {loading ? <><span className="spinner"></span> ANALYZING...</> : '🚀 GENERATE STRATEGY'}
+            </button>
+            <button
+              className="btn"
+              onClick={handleMarketIntel}
+              disabled={marketLoading || (!formData.itemName && !formData.purchaseCategory)}
+              style={{ height: '3.25rem', fontSize: '0.9rem', borderRadius: '10px', flex: '1 1 35%', background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)', color: 'white', boxShadow: '0 4px 15px rgba(139, 92, 246, 0.25)' }}
+            >
+              {marketLoading ? <><span className="spinner"></span> RESEARCHING...</> : '🔎 MARKET INTELLIGENCE'}
+            </button>
+          </div>
         </div>
       )}
 
@@ -510,8 +558,54 @@ export default function Home() {
         </div>
       )}
 
+      {/* ─── MARKET INTELLIGENCE ─── */}
+      {marketIntel && !showHistory && (
+        <div className="slide-up" id="market-intel-section" style={{ marginTop: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: '700' }}>🔎 MARKET INTELLIGENCE REPORT</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '0.6rem', padding: '0.25rem 0.6rem', borderRadius: '12px', background: 'rgba(251, 191, 36, 0.1)', border: '1px solid rgba(251, 191, 36, 0.3)', color: 'var(--warning-color)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04rem' }}>
+                ⚠ Indicative Data — Verify Before Use
+              </span>
+            </div>
+          </div>
+
+          <div className="card" ref={marketRef} style={{ padding: '2rem', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
+            {/* Report Header */}
+            <div style={{ borderLeft: '4px solid #8b5cf6', paddingLeft: '1.25rem', marginBottom: '2rem' }}>
+              <h3 style={{ fontSize: '1.3rem', color: '#8b5cf6', marginBottom: '0.25rem' }}>
+                {formData.itemName || formData.purchaseCategory || 'Market Analysis'}
+              </h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                Category: {formData.purchaseCategory || '—'} • Generated: {new Date().toLocaleDateString()} • AI-Assisted Research
+              </p>
+            </div>
+
+            {/* Report Body */}
+            <div style={{ fontSize: '0.92rem', lineHeight: '1.65', color: 'var(--text-main)' }}>
+              {marketIntel.split('###').map((section, i) => {
+                if (i === 0) return null;
+                const lines = section.split('\n');
+                const title = lines[0].trim();
+                const body = lines.slice(1).join('\n').trim();
+                const isDisclaimer = title.includes('DISCLAIMER');
+
+                return (
+                  <div key={i} className="report-section">
+                    <h4 className="report-section-title" style={{ color: isDisclaimer ? 'var(--warning-color)' : 'var(--accent-color)', borderColor: isDisclaimer ? 'rgba(251, 191, 36, 0.3)' : 'var(--border-color)' }}>{title}</h4>
+                    <div style={isDisclaimer ? { padding: '1rem', background: 'rgba(251, 191, 36, 0.05)', border: '1px solid rgba(251, 191, 36, 0.15)', borderRadius: '8px', fontSize: '0.82rem', color: 'var(--warning-color)' } : { paddingLeft: '0.25rem' }}>
+                      {renderContent(body)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ─── FOLLOW-UP CHAT ─── */}
-      {result && !showHistory && (
+      {(result || marketIntel) && !showHistory && (
         <div className="slide-up" style={{ marginTop: '1.5rem' }}>
           {!showChat ? (
             <button
