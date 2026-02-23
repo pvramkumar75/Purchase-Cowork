@@ -21,6 +21,20 @@ interface HistoryItem {
   result: string;
 }
 
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+const CHAT_SUGGESTIONS = [
+  'What if they refuse to budge on price?',
+  'How can I use payment terms as leverage?',
+  'Write a stronger follow-up email',
+  'What is my walk-away point?',
+  'Suggest a counter-offer strategy',
+  'How to handle their RM cost excuse?'
+];
+
 export default function Home() {
   const [formData, setFormData] = useState<FormData>(initialForm);
   const [loading, setLoading] = useState(false);
@@ -31,6 +45,13 @@ export default function Home() {
   const [showGlossary, setShowGlossary] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
+
+  // Follow-up chat state
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('dealpilot_history');
@@ -104,6 +125,47 @@ export default function Home() {
       setTimeout(() => {
         document.getElementById('result-section')?.scrollIntoView({ behavior: 'smooth' });
       }, 150);
+    }
+  };
+
+  // Follow-up chat handler
+  const handleChatSend = async (overrideMessage?: string) => {
+    const message = overrideMessage || chatInput.trim();
+    if (!message || chatLoading) return;
+
+    const userMsg: ChatMessage = { role: 'user', content: message };
+    const updatedMessages = [...chatMessages, userMsg];
+    setChatMessages(updatedMessages);
+    setChatInput('');
+    setChatLoading(true);
+
+    // Build conversation history including the original strategy as the first assistant message
+    const apiMessages = [
+      { role: 'assistant', content: result || '' },
+      ...updatedMessages
+    ];
+
+    try {
+      const response = await fetch('/api/followup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: apiMessages,
+          negotiationContext: formData
+        }),
+      });
+
+      const data = await response.json();
+      if (data.reply) {
+        setChatMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
+      } else {
+        setChatMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I could not process that. Please try again.' }]);
+      }
+    } catch (err) {
+      setChatMessages(prev => [...prev, { role: 'assistant', content: 'Connection error. Please try again.' }]);
+    } finally {
+      setChatLoading(false);
+      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     }
   };
 
@@ -445,6 +507,78 @@ export default function Home() {
               })}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ─── FOLLOW-UP CHAT ─── */}
+      {result && !showHistory && (
+        <div className="slide-up" style={{ marginTop: '1.5rem' }}>
+          {!showChat ? (
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowChat(true)}
+              style={{ width: '100%', padding: '0.85rem', fontSize: '0.9rem', borderRadius: '10px' }}
+            >
+              💬 Ask More — Continue This Conversation
+            </button>
+          ) : (
+            <div className="chat-container">
+              <div className="chat-header">
+                <h4>💬 Follow-Up Chat — {formData.itemName || 'Negotiation'}</h4>
+                <button
+                  className="chat-suggestion-btn"
+                  onClick={() => { setShowChat(false); setChatMessages([]); }}
+                  style={{ fontSize: '0.65rem' }}
+                >
+                  ✕ Close
+                </button>
+              </div>
+
+              {/* Suggestion pills */}
+              {chatMessages.length === 0 && (
+                <div className="chat-suggestions">
+                  {CHAT_SUGGESTIONS.map((s, i) => (
+                    <button key={i} className="chat-suggestion-btn" onClick={() => handleChatSend(s)}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Messages */}
+              <div className="chat-messages">
+                {chatMessages.length === 0 && (
+                  <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem', padding: '1rem' }}>
+                    Ask any follow-up question about this negotiation. I remember all the details.
+                  </div>
+                )}
+                {chatMessages.map((msg, i) => (
+                  <div key={i} className={`chat-bubble ${msg.role === 'user' ? 'chat-bubble-user' : 'chat-bubble-ai'}`}>
+                    {msg.content}
+                  </div>
+                ))}
+                {chatLoading && (
+                  <div className="chat-typing">
+                    <span></span><span></span><span></span>
+                  </div>
+                )}
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* Input bar */}
+              <div className="chat-input-bar">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
+                  placeholder="Ask a follow-up question..."
+                  disabled={chatLoading}
+                />
+                <button onClick={() => handleChatSend()} disabled={chatLoading || !chatInput.trim()}>SEND</button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
