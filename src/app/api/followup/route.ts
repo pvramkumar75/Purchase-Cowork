@@ -1,14 +1,11 @@
 import { NextResponse } from 'next/server';
 import { SYSTEM_PROMPT } from '@/lib/config';
+import { callAI, AIProvider } from '@/lib/ai-provider';
 
 export async function POST(req: Request) {
     try {
-        const { messages, negotiationContext } = await req.json();
-        const apiKey = process.env.DEEPSEEK_API_KEY;
-
-        if (!apiKey) {
-            return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
-        }
+        const { messages, negotiationContext, aiProvider } = await req.json();
+        const provider: AIProvider = aiProvider || 'deepseek';
 
         // Build the system message with negotiation context
         const contextPrompt = `${SYSTEM_PROMPT}
@@ -35,27 +32,7 @@ RULES FOR FOLLOW-UP:
             ...messages
         ];
 
-        const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
-            },
-            body: JSON.stringify({
-                model: 'deepseek-chat',
-                messages: apiMessages,
-                temperature: 0.2
-            })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error?.message || 'Failed to call AI');
-        }
-
-        const aiResult = await response.json();
-        const reply = aiResult.choices[0].message.content;
-
+        const reply = await callAI(provider, apiMessages, 0.2);
         return NextResponse.json({ reply });
     } catch (error: any) {
         console.error('Follow-up API Error:', error);

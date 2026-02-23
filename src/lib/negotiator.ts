@@ -1,8 +1,7 @@
 import { SYSTEM_PROMPT } from './config';
+import { callAI, AIProvider } from './ai-provider';
 
-export async function getNegotiationGuidance(data: any) {
-    const apiKey = process.env.DEEPSEEK_API_KEY;
-
+export async function getNegotiationGuidance(data: any, provider: AIProvider = 'deepseek') {
     // Pre-calculations
     const lastPrice = parseFloat(data.lastPrice) || 0;
     const currentQuote = parseFloat(data.currentQuote) || 0;
@@ -57,27 +56,8 @@ ${data.efficiencyClass ? `- Motor Efficiency Class: ${data.efficiencyClass}` : '
 
 Please provide a complete strategy in simple English with specific numbers.`;
 
-    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-            model: 'deepseek-chat',
-            messages: [
-                { role: 'system', content: SYSTEM_PROMPT },
-                { role: 'user', content: userPrompt }
-            ],
-            temperature: 0.15
-        })
-    });
-
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || 'Failed to call DeepSeek API');
-    }
-
-    const aiResult = await response.json();
-    return aiResult.choices[0].message.content;
+    return await callAI(provider, [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: userPrompt }
+    ], 0.15);
 }

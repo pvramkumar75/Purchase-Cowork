@@ -58,6 +58,9 @@ export default function Home() {
   const [marketLoading, setMarketLoading] = useState(false);
   const marketRef = useRef<HTMLDivElement>(null);
 
+  // AI Provider state
+  const [aiProvider, setAiProvider] = useState<'deepseek' | 'groq'>('deepseek');
+
   useEffect(() => {
     const saved = localStorage.getItem('dealpilot_history');
     if (saved) {
@@ -105,7 +108,7 @@ export default function Home() {
       const response = await fetch('/api/negotiate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(submissionData),
+        body: JSON.stringify({ ...submissionData, aiProvider }),
       });
 
       const data = await response.json();
@@ -147,7 +150,7 @@ export default function Home() {
       const response = await fetch('/api/market-intel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, aiProvider }),
       });
 
       const data = await response.json();
@@ -189,7 +192,8 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: apiMessages,
-          negotiationContext: formData
+          negotiationContext: formData,
+          aiProvider
         }),
       });
 
@@ -359,7 +363,15 @@ export default function Home() {
             <p style={{ fontSize: '0.62rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1rem' }}>Procurement Strategy Engine • v1.2.0</p>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <select
+            value={aiProvider}
+            onChange={(e) => setAiProvider(e.target.value as 'deepseek' | 'groq')}
+            style={{ fontSize: '0.7rem', padding: '0.4rem 0.6rem', background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '6px', color: aiProvider === 'groq' ? '#f97316' : 'var(--accent-color)', fontWeight: '600', cursor: 'pointer', fontFamily: 'var(--font-family)' }}
+          >
+            <option value="deepseek">🧠 DeepSeek</option>
+            <option value="groq">⚡ Groq (Llama 3.3)</option>
+          </select>
           <button className="btn btn-secondary" style={{ fontSize: '0.7rem', padding: '0.4rem 0.8rem' }} onClick={() => setShowGlossary(!showGlossary)}>
             {showGlossary ? '✕ CLOSE' : '📖 GLOSSARY'}
           </button>
