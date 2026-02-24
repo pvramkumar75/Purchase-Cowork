@@ -59,7 +59,7 @@ export default function Home() {
   const marketRef = useRef<HTMLDivElement>(null);
 
   // AI Provider state
-  const [aiProvider, setAiProvider] = useState<'deepseek' | 'groq'>('deepseek');
+  const [aiProvider, setAiProvider] = useState<'deepseek' | 'groq' | 'gemini'>('deepseek');
 
   useEffect(() => {
     const saved = localStorage.getItem('dealpilot_history');
@@ -366,11 +366,12 @@ export default function Home() {
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <select
             value={aiProvider}
-            onChange={(e) => setAiProvider(e.target.value as 'deepseek' | 'groq')}
-            style={{ fontSize: '0.7rem', padding: '0.4rem 0.6rem', background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '6px', color: aiProvider === 'groq' ? '#f97316' : 'var(--accent-color)', fontWeight: '600', cursor: 'pointer', fontFamily: 'var(--font-family)' }}
+            onChange={(e) => setAiProvider(e.target.value as 'deepseek' | 'groq' | 'gemini')}
+            style={{ fontSize: '0.7rem', padding: '0.4rem 0.6rem', background: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '6px', color: aiProvider === 'groq' ? '#f97316' : aiProvider === 'gemini' ? '#34d399' : 'var(--accent-color)', fontWeight: '600', cursor: 'pointer', fontFamily: 'var(--font-family)' }}
           >
             <option value="deepseek">🧠 DeepSeek</option>
             <option value="groq">⚡ Groq (Llama 3.3)</option>
+            <option value="gemini">✨ Gemini 2.0 Flash</option>
           </select>
           <button className="btn btn-secondary" style={{ fontSize: '0.7rem', padding: '0.4rem 0.8rem' }} onClick={() => setShowGlossary(!showGlossary)}>
             {showGlossary ? '✕ CLOSE' : '📖 GLOSSARY'}
